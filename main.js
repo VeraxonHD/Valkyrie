@@ -2,6 +2,7 @@
 const Discord = require("discord.js");
 const interactions = require("discord-slash-commands-client");
 const { Sequelize, DataTypes, Model } = require("sequelize");
+const ms = require("ms");
 
 //File Loads
 const sysConfig = require("./store/config.json");
@@ -37,6 +38,23 @@ const Configs = sequelize.define("Configs", {
         type: DataTypes.STRING
     }
 })
+const Mutes = sequelize.define("Mutes", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    endsAt: {
+        type: DataTypes.BIGINT
+    },
+    reason: {
+        type: DataTypes.STRING
+    }
+})
 
 /**==============
  * Event Handlers
@@ -50,6 +68,7 @@ client.on("ready", async () =>{
 
     //Sync Database Tables
     await Configs.sync();
+    await Mutes.sync();
 
     //FooBar Command
     commands.createCommand({
@@ -165,13 +184,13 @@ client.on("ready", async () =>{
                         required: true
                     },
                     {
-                        name: "Reason",
-                        description: "The reason for their mute",
+                        name: "Duration",
+                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
                         type: 3
                     },
                     {
-                        name: "Duration",
-                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
+                        name: "Reason",
+                        description: "The reason for their mute",
                         type: 3
                     }
                 ]
@@ -188,13 +207,13 @@ client.on("ready", async () =>{
                         required: true
                     },
                     {
-                        name: "Reason",
-                        description: "The reason for their mute",
+                        name: "Duration",
+                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
                         type: 3
                     },
                     {
-                        name: "Duration",
-                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
+                        name: "Reason",
+                        description: "The reason for their mute",
                         type: 3
                     }
                 ]
@@ -276,10 +295,11 @@ client.on("interactionCreate", (interaction) =>{
 
             var duration = args[0].options[1];
             if(!args[0].options[1]){
-                duration = -1
+                duration = "-1";
             }else{
-                duration = duration.value
+                duration = args[0].options[1].value;
             }
+            var endsTimestamp = Date.now() + ms(duration);
 
             var reason = args[0].options[2];
             if(!args[0].options[2]){
@@ -288,9 +308,21 @@ client.on("interactionCreate", (interaction) =>{
                 reason = reason.value;
             }
 
-            guild.members.fetch(targetID).then(targetMember =>{
-                
-            });
+            Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
+                console.log(guildConfig.mutedRoleID)
+                var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
+                guild.members.fetch(targetID).then(targetMember =>{
+                    targetMember.roles.add(mutedRole).then(newMember =>{
+                        newMember.send(`You have been Muted in ${guild.name} for ${duration}. Reason: ${reason}`);
+                        Mutes.create({
+                            guildID: guild.id,
+                            memberID: targetID,
+                            endsAt: endsTimestamp,
+                            reason: reason
+                        })
+                    }).catch(console.log)
+                });
+            })
         }
     }
 });
