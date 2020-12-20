@@ -4,13 +4,15 @@
   "description": "A new form of Discord Moderation Bot",
   "main": "main.js",
   "dependencies": {
-    "discord-slash-commands-client": "^1.0.3",
     "discord-slash-commands": "^1.0.1",
-    "discord.js": "^12.5.0"
+    "discord-slash-commands-client": "^1.0.3",
+    "discord.js": "^12.5.0",
+    "sequelize": "^6.3.5",
+    "sqlite3": "^5.0.0"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "node main.js"
+    "launch": "node main.js"
   },
   "repository": {
     "type": "git",
