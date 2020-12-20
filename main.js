@@ -1,24 +1,55 @@
 //Dependencies
 const Discord = require("discord.js");
 const interactions = require("discord-slash-commands-client");
+const { Sequelize, DataTypes, Model } = require("sequelize");
 
 //File Loads
-const config = require("./store/config.json");
+const sysConfig = require("./store/config.json");
 const common = require("./util/commonFuncs.js");
-const { S_IFREG } = require("constants");
 
 //Globals
 const client = new Discord.Client();
-client.interactions = new interactions.Client(
-    config.token,
-    "789655175048331283"
-);
-var commands = client.interactions;
+    client.interactions = new interactions.Client(
+        sysConfig.token,
+        "789655175048331283"
+    );
+const sequelize = new Sequelize({
+    dialect: "sqlite",
+    storage: "./store/database.db",
+    define: {
+        freezeTableName: true
+    }
+});
+const commands = client.interactions;
 
-//common.listCommands(commands)
+//Database Definitions and Loading
+const Configs = sequelize.define("Configs", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+    ownerID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    mutedRoleID: {
+        type: DataTypes.STRING
+    }
+})
 
-client.on("ready", () =>{
+/**==============
+ * Event Handlers
+ ==============*/
+
+/**
+ * 'ready' event - Called when bot is connected to the API.
+ */
+client.on("ready", async () =>{
     console.log("Bot Loaded.");
+
+    //Sync Database Tables
+    await Configs.sync();
 
     //FooBar Command
     commands.createCommand({
@@ -78,7 +109,6 @@ client.on("ready", () =>{
     commands.createCommand({
         name: "kick",
         description: "Kicks a Member from the Discord.",
-        type: 4,
         options: [
             {
                 name: "user",
@@ -118,8 +148,65 @@ client.on("ready", () =>{
             }
         ]
     }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    //Mute Command
+    commands.createCommand({
+        name: "mute",
+        description: "Mute a user, applying a role that stops them from speaking.",
+        options: [
+            {
+                name: "user",
+                description: "Mute a user by User ID",
+                type: 1,
+                options: [
+                    {
+                        name: "UserID",
+                        description: "The User's Unique Snowflake ID",
+                        type: 3,
+                        required: true
+                    },
+                    {
+                        name: "Reason",
+                        description: "The reason for their mute",
+                        type: 3
+                    },
+                    {
+                        name: "Duration",
+                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
+                        type: 3
+                    }
+                ]
+            },
+            {
+                name: "mention",
+                description: "Mute a user my mention",
+                type: 1,
+                options: [
+                    {
+                        name: "Mention",
+                        description: "The User's @Mention",
+                        type: 6,
+                        required: true
+                    },
+                    {
+                        name: "Reason",
+                        description: "The reason for their mute",
+                        type: 3
+                    },
+                    {
+                        name: "Duration",
+                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
+                        type: 3
+                    }
+                ]
+            }
+        ]
+    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
 });
 
+/**
+ * 'interactionCreate' - Called when a user runs a slash-command.
+ * @param interaction - The interaction object from the API
+ */
 client.on("interactionCreate", (interaction) =>{
     //Defs
     const guild = interaction.guild;
@@ -179,14 +266,68 @@ client.on("interactionCreate", (interaction) =>{
             }); 
         }
     }
-});
+    else if(interaction.name == "mute"){
+        if(args == null){
+            return channel.send("Code 101 - No Arguments Supplied.");
+        }else if(member.hasPermission("MANAGE_MESSAGES") == false){
+            return channel.send("Code 102 - Invalid Permissions.")
+        }else{
+            var targetID = args[0].options[0].value;
 
-client.on("message", (message) =>{
-    if(message.channel.type != "text"){return}
-    if(message.content.startsWith(config.prefix) != -1){
-        var msgCommand = message.content.split(config.prefix)[1];
+            var duration = args[0].options[1];
+            if(!args[0].options[1]){
+                duration = -1
+            }else{
+                duration = duration.value
+            }
+
+            var reason = args[0].options[2];
+            if(!args[0].options[2]){
+                reason = "No Reason Specified";
+            }else{
+                reason = reason.value;
+            }
+
+            guild.members.fetch(targetID).then(targetMember =>{
+                
+            });
+        }
     }
 });
 
+/**
+ * 'guildCreate' - Called when joining a new Guild
+ * @param guild - The guild object from the API
+ */
+client.on("guildCreate", async (guild) =>{
+    Configs.create({
+        guildID: guild.id,
+        ownerID: guild.ownerID
+    }).then( () =>{
+        console.log(`Joined Guild ${guild.name} (${guild.id}) successfully.`);
+        client.guilds.fetch("409365548766461952").then(devGuild => {
+            devGuild.channels.resolve("742885805449805945").send(`I joined a new server! Name: ${guild.name}, ID: ${guild.id}, Owner: <@${guild.ownerID}>`);
+        })
+    }
+    ).catch(console.log)
+    var mutedRole = guild.roles.cache.find(r => r.name.toLowerCase() == "muted")
+    if(!mutedRole){
+        try{
+            guild.roles.create({
+                data: {
+                    name: "Muted",
+                    color: "RED"
+                },
+                reason: "Automatically created a Muted Role. If you have one already, please edit the config file to point to that role. Else, feel free to edit this role however you please."
+            }).then(newMutedRole => {
+                Configs.update({mutedRoleID: newMutedRole.id}, {where:{guildID: guild.id}})
+            })
+        }catch(e){
+            console.log(e)
+        }
+    }else{
+        Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}})
+    }
+})
 //Client Log In
-client.login(config.token);
+client.login(sysConfig.token);
