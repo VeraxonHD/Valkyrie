@@ -309,11 +309,11 @@ client.on("interactionCreate", (interaction) =>{
             }
 
             Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
-                console.log(guildConfig.mutedRoleID)
                 var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
                 guild.members.fetch(targetID).then(targetMember =>{
                     targetMember.roles.add(mutedRole).then(newMember =>{
-                        newMember.send(`You have been Muted in ${guild.name} for ${duration}. Reason: ${reason}`);
+                        channel.send(`**${targetMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
+                        newMember.send(`You have been Muted in **${guild.name}** for **${duration}**. Reason: **${reason}**.`);
                         Mutes.create({
                             guildID: guild.id,
                             memberID: targetID,
