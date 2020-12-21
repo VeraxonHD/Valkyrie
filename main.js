@@ -8,6 +8,7 @@ const ms = require("ms");
 const sysConfig = require("./store/config.json");
 const common = require("./util/commonFuncs.js");
 const logs = require("./util/logFunctions.js");
+const package = require("./package.json");
 
 //Globals
 const client = new Discord.Client();
@@ -15,6 +16,7 @@ const client = new Discord.Client();
         sysConfig.token,
         "789655175048331283"
     );
+const commands = client.interactions;
 const sequelize = new Sequelize({
     dialect: "sqlite",
     storage: "./store/database.db",
@@ -22,7 +24,6 @@ const sequelize = new Sequelize({
         freezeTableName: true
     }
 });
-const commands = client.interactions;
 
 //Database Definitions and Loading
 const Configs = sequelize.define("Configs", {
@@ -91,16 +92,14 @@ client.on("ready", async () =>{
     await Configs.sync();
     await Mutes.sync();
 
-    //FooBar Command
-    commands.createCommand({
-        name: "foo",
-        description: "Replies 'Bar!'"
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    //Set Presence
+    client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
+
     //PingPong Command
     commands.createCommand({
         name: "ping",
-        description: "Replies 'Pong!'"
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+        description: "Replies 'Pong!' and includes an average latency"
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Ban Command
     commands.createCommand({
         name: "ban",
@@ -144,7 +143,7 @@ client.on("ready", async () =>{
                 ]
             }
         ]
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Kick Command
     commands.createCommand({
         name: "kick",
@@ -187,7 +186,7 @@ client.on("ready", async () =>{
                 ]
             }
         ]
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Mute Command
     commands.createCommand({
         name: "mute",
@@ -240,7 +239,7 @@ client.on("ready", async () =>{
                 ]
             }
         ]
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Unmute Command    
     commands.createCommand({
         name: "unmute",
@@ -273,7 +272,43 @@ client.on("ready", async () =>{
                 ]
             }
         ]
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    //Config Command
+    commands.createCommand({
+        name: "config",
+        description: "Enables admins to change certain values or behaviours.",
+        options: [
+            {
+                name: "muterole",
+                description: "The Role to apply to users when /mute-d.",
+                type: 1,
+                options: [
+                    {
+                        name: "muterole",
+                        description: "@Role Mentionable of the Mute Role.",
+                        type: 8,
+                        required: true
+                    }
+                ]
+            },
+            {
+                name: "logchannel",
+                description: "The channel to log bot interactions to.",
+                type: 1,
+                options: [
+                    {
+                        name: "logchannel",
+                        description: "#Channel Mentionable of the new Log Channel",
+                        type: 7,
+                        required: true
+                    }
+                ]
+            }
+        ]
     }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+
+    //List all Commands
+    //common.listCommands(commands);
 });
 
 /**
@@ -288,8 +323,8 @@ client.on("interactionCreate", (interaction) =>{
     const author = interaction.author;
     var args = interaction.options || null;
 
-    if(interaction.name == "foo"){
-        interaction.channel.send("Bar!");
+    if(interaction.name == "ping"){
+        interaction.channel.send(`Pong! Average Service Latency: \`${client.ws.ping}ms\`.`);
     }
     else if(interaction.name == "ban"){
         if(args == null){
@@ -297,14 +332,16 @@ client.on("interactionCreate", (interaction) =>{
         }else if(member.hasPermission("BAN_MEMBERS") == false){
             return channel.send("Code 102 - Invalid Permissions.")
         }else{
-            var targetID = args[0].options[0].value;
+            var targetID;
+            var reason = "No Reason Specified";
+            args[0].options.forEach(arg => {
+                if(arg.name == "mention" || arg.name == "userid"){
+                    targetID = arg.value;
+                }else if(arg.name == "reason"){
+                    reason = arg.value;
+                }
+            });
 
-            var reason = args[0].options[1];
-            if(!args[0].options[1]){
-                reason = "No Reason Specified";
-            }else{
-                reason = reason.value;
-            }
             guild.members.fetch(targetID).then(targetMember =>{
                 if(targetMember.bannable){
                     targetMember.ban({days: 7, reason: reason});
@@ -321,14 +358,16 @@ client.on("interactionCreate", (interaction) =>{
         }else if(member.hasPermission("KICK_MEMBERS") == false){
             return channel.send("Code 102 - Invalid Permissions.")
         }else{
-            var targetID = args[0].options[0].value;
+            var targetID;
+            var reason = "No Reason Specified";
+            args[0].options.forEach(arg => {
+                if(arg.name == "mention" || arg.name == "userid"){
+                    targetID = arg.value;
+                }else if(arg.name == "reason"){
+                    reason = arg.value;
+                }
+            });
 
-            var reason = args[0].options[1];
-            if(!args[0].options[1]){
-                reason = "No Reason Specified";
-            }else{
-                reason = reason.value;
-            }
             guild.members.fetch(targetID).then(targetMember =>{
                 if(targetMember.kickable){
                     targetMember.kick(reason);
@@ -350,11 +389,11 @@ client.on("interactionCreate", (interaction) =>{
             var reason = "No Reason Specified";
             args[0].options.forEach(arg => {
                 if(arg.name == "mention" || arg.name == "userid"){
-                    targetID = arg.value
+                    targetID = arg.value;
                 }else if(arg.name == "duration"){
-                    duration = arg.value
+                    duration = arg.value;
                 }else if(arg.name == "reason"){
-                    reason = arg.value
+                    reason = arg.value;
                 }
             });
 
@@ -391,7 +430,7 @@ client.on("interactionCreate", (interaction) =>{
             var targetID;
             args[0].options.forEach(arg => {
                 if(arg.name == "mention" || arg.name == "userid"){
-                    targetID = arg.value
+                    targetID = arg.value;
                 }
             });
 
@@ -405,6 +444,25 @@ client.on("interactionCreate", (interaction) =>{
                     }).catch(console.log);
                 }).catch(console.log);
             }).catch(console.log);
+        }
+    }
+    else if(interaction.name == "config"){
+        if(args == null){
+            return channel.send("Code 101 - No Arguments Supplied.");
+        }else if(member.hasPermission("ADMINISTRATOR") == false){
+            return channel.send("Code 102 - Invalid Permissions.")
+        }else{
+            args[0].options.forEach(arg => {
+                var conVar = arg.name;
+                var value = arg.value;
+                if(conVar == "muterole"){
+                    Configs.update({mutedRoleID: value},{where: {guildID: guild.id}});
+                    return channel.send(`Updated muted role to <@&${value}> successfully.`);
+                }else if(conVar == "logchannel"){
+                    Configs.update({logChannelID: value},{where: {guildID: guild.id}});
+                    return channel.send(`Updated log channel to <#${value}> successfully.`);
+                }
+            });
         }
     }
 });
