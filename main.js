@@ -42,7 +42,7 @@ const Configs = sequelize.define("Configs", {
     logChannelID: {
         type: DataTypes.STRING
     }
-})
+});
 const Mutes = sequelize.define("Mutes", {
     guildID: {
         type: DataTypes.STRING,
@@ -58,10 +58,71 @@ const Mutes = sequelize.define("Mutes", {
     reason: {
         type: DataTypes.STRING
     }
+});
+const Users = sequelize.define("Users", {
+    userID: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        primaryKey: true,
+        unique: true
+    },
+    globalMsgCount: {
+        type: DataTypes.INTEGER
+    },
+    globalWarnCount: {
+        type: DataTypes.INTEGER
+    },
+    globalMuteCount: {
+        type: DataTypes.INTEGER
+    },
+    globalKickCount: {
+        type: DataTypes.INTEGER
+    },
+    globalBanCount: {
+        type: DataTypes.INTEGER
+    },
+    lastSeenGuildID: {
+        type: DataTypes.STRING
+    },
+    lastSeenChannelID: {
+        type: DataTypes.STRING
+    }
+});
+const GuildUsers = sequelize.define("GuildUsers", {
+    guildUserID: {
+        type: DataTypes.STRING,
+        primaryKey: true,
+        allowNull: false,
+        unique: true
+    },
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    userID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    guildMsgCount: {
+        type: DataTypes.INTEGER
+    },
+    guildWarnCount: {
+        type: DataTypes.INTEGER
+    },
+    guildMuteCount: {
+        type: DataTypes.INTEGER
+    },
+    guildKickCount: {
+        type: DataTypes.INTEGER
+    },
+    guildBanCount: {
+        type: DataTypes.INTEGER
+    }
 })
 
-//Automated unmute handling
+//Automated/Frquent Functions
 client.setInterval(async () => {
+    //Automated Umute Handling
     Mutes.findAll({where: {endsAt: {[Op.and]: [{[Op.lte]: Date.now(), [Op.ne]: "-1"}]}}}).then(rows =>{
         rows.forEach(row => {
             client.guilds.fetch(row.guildID).then(rGuild =>{
@@ -91,6 +152,8 @@ client.on("ready", async () =>{
     //Sync Database Tables
     await Configs.sync();
     await Mutes.sync();
+    await Users.sync();
+    await GuildUsers.sync();
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
@@ -578,5 +641,45 @@ client.on("guildCreate", async (guild) =>{
 
     //Find or Create a 'LogChannel'.
 })
+
+client.on("message", async (message) =>{
+    if(message.channel.type === "text" && message.author.id != client.user.id){
+        var guildUserCompositeKey = message.guild.id + message.author.id;
+        Users.findOne({where: {guildUserID: guildUserCompositeKey}}).then(user => {
+            if(!user){
+                Users.create({
+                    userID: message.author.id,
+                    globalMsgCount: 1,
+                    globalWarnCount: 0,
+                    globalMuteCount: 0,
+                    globalKickCount: 0,
+                    globalBanCount: 0,
+                    lastSeenGuildID: message.guild.id,
+                    lastSeenChannelID: message.channel.id
+                });
+            }else{
+
+            }
+        });
+        GuildUsers.findOne({where: {guildUserID: guildUserCompositeKey}}).then(guildUser => {
+            if(!guildUser){
+                GuildUsers.create({
+                    guildUserID: guildUserCompositeKey,
+                    guildID: message.guild.id,
+                    userID: message.author.id,
+                    guildMsgCount: 1,
+                    guildWarnCount: 0,
+                    guildMuteCount: 0,
+                    guildKickCount: 0,
+                    guildBanCount: 0,
+                });
+            }else{
+                GuildUsers.increment('guildMsgCount', {where: {guildUserID: guildUserCompositeKey}});
+            }
+        });
+    }else{
+        return;
+    }
+});
 //Client Log In
 client.login(sysConfig.token);
