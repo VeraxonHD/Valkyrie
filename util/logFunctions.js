@@ -8,10 +8,10 @@ exports.logMute = (member, duration, reason)=>{
     const Discord = require("discord.js");
     const embed = new Discord.MessageEmbed()
         .setAuthor("Member Muted")
-        .addField("Member Display Name", member.displayName, true)
+        .addField("Member", member, true)
         .addField("Duration", duration, true)
         .addField("Reason", reason, true)
         .setColor("RED")
-        .setFooter("logMute.logs.valkyrie")
-    return {embed}
+        .setFooter("logMute.logs.valkyrie");
+    return {embed};
 }
