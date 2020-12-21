@@ -363,7 +363,7 @@ client.on("interactionCreate", (interaction) =>{
                 if(targetMember.bannable){
                     targetMember.ban({days: 7, reason: reason});
                     channel.send(`User ${targetMember.displayName} was banned from the server. Reason: ${reason}. <:banhammer:722877640201076775>`)
-                    Guilds.findOne({where:{guildID: guild.id}}).then(guildConfig => {
+                    Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
                         guild.channels.resolve(guildConfig.logChannelID).send(logs.logBan(targetMember, reason, member));
                     }).catch(e =>{
                         channel.send("Code 110 - Unknown Database Error.");
@@ -396,7 +396,7 @@ client.on("interactionCreate", (interaction) =>{
                 if(targetMember.kickable){
                     targetMember.kick(reason);
                     channel.send(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
-                    Guilds.findOne({where:{guildID: guild.id}}).then(guildConfig => {
+                    Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
                         guild.channels.resolve(guildConfig.logChannelID).send(logs.logBan(targetMember, reason, member));
                     }).catch(e =>{
                         channel.send("Code 110 - Unknown Database Error.");
