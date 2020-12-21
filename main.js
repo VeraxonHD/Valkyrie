@@ -397,7 +397,7 @@ client.on("interactionCreate", (interaction) =>{
                     targetMember.kick(reason);
                     channel.send(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
                     Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
-                        guild.channels.resolve(guildConfig.logChannelID).send(logs.logBan(targetMember, reason, member));
+                        guild.channels.resolve(guildConfig.logChannelID).send(logs.logKick(targetMember, reason, member));
                     }).catch(e =>{
                         channel.send("Code 110 - Unknown Database Error.");
                         console.log(e);
