@@ -306,6 +306,23 @@ client.on("ready", async () =>{
             }
         ]
     }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    //UserInfo Command
+    commands.createCommand({
+        name: "userinfo",
+        description: "View your own (or a target's) user information",
+        options: [
+            {
+                name: "mention",
+                description: "Optional target @member",
+                type: 6
+            },
+            {
+                name: "userid",
+                description: "User ID of the target",
+                type: 3
+            }
+        ]
+    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
 
     //List all Commands
     //common.listCommands(commands);
@@ -330,7 +347,7 @@ client.on("interactionCreate", (interaction) =>{
         if(args == null){
             return channel.send("Code 101 - No Arguments Supplied.");
         }else if(member.hasPermission("BAN_MEMBERS") == false){
-            return channel.send("Code 102 - Invalid Permissions.")
+            return channel.send("Code 103 - Invalid Permissions.")
         }else{
             var targetID;
             var reason = "No Reason Specified";
@@ -356,7 +373,7 @@ client.on("interactionCreate", (interaction) =>{
         if(args == null){
             return channel.send("Code 101 - No Arguments Supplied.");
         }else if(member.hasPermission("KICK_MEMBERS") == false){
-            return channel.send("Code 102 - Invalid Permissions.")
+            return channel.send("Code 103 - Invalid Permissions.")
         }else{
             var targetID;
             var reason = "No Reason Specified";
@@ -382,7 +399,7 @@ client.on("interactionCreate", (interaction) =>{
         if(args == null){
             return channel.send("Code 101 - No Arguments Supplied.");
         }else if(member.hasPermission("MANAGE_MESSAGES") == false){
-            return channel.send("Code 102 - Invalid Permissions.")
+            return channel.send("Code 103 - Invalid Permissions.")
         }else{
             var targetID;
             var duration = -1;
@@ -397,35 +414,45 @@ client.on("interactionCreate", (interaction) =>{
                 }
             });
 
-            console.log(targetID)
-            console.log(duration)
-            console.log(reason)
-
-            var endsTimestamp = Date.now() + ms(duration);
+            var endsTimestamp;
+            try{
+                endsTimestamp = Date.now() + ms(duration);
+            }catch{
+                return channel.send("Code 102 - Invalid Argument: 'duration'.\nMust follow (int)(scale)\nExample: ```'10s' - 10 seconds\n'30m' - 30 minutes\n'2h' - 2 Hours\nFull list of examples: https://github.com/vercel/ms#examples```")
+            }
 
             Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
                 var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
+                if(!mutedRole){
+                    return channel.send("Code 100 - Muted Role is invalid - database corruption?");
+                }
                 guild.members.fetch(targetID).then(targetMember =>{
                     targetMember.roles.add(mutedRole).then(newMember =>{
                         channel.send(`**${newMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
                         newMember.send(`You have been Muted in **${guild.name}** for **${duration}**. Reason: **${reason}**.`);
-                        guild.channels.resolve(guildConfig.logChannelID).send(logs.logMute(targetMember, duration, reason));
                         Mutes.create({
                             guildID: guild.id,
                             memberID: targetID,
                             endsAt: endsTimestamp,
                             reason: reason
-                        }).catch(console.log);
-                    }).catch(console.log);
-                }).catch(console.log);
-            }).catch(console.log);
+                        }).catch(e => {
+                            channel.send("Code 110 - Unknown Error with Database.");
+                            console.log(e);
+                        });
+                        guild.channels.resolve(guildConfig.logChannelID).send(logs.logMute(targetMember, duration, reason));
+                    }).catch(channel.send("Code 100 - Failed to add Mute Role to User."));
+                }).catch(channel.send("Code 104 - Invalid User or Member Argument."));
+            }).catch(e => {
+                channel.send("Code 110 - Unknown Error with Database.");
+                console.log(e);
+            });
         }
     }
     else if(interaction.name == "unmute"){
         if(args == null){
             return channel.send("Code 101 - No Arguments Supplied.");
         }else if(member.hasPermission("MANAGE_MESSAGES") == false){
-            return channel.send("Code 102 - Invalid Permissions.")
+            return channel.send("Code 103 - Invalid Permissions.")
         }else{
             var targetID;
             args[0].options.forEach(arg => {
@@ -436,40 +463,70 @@ client.on("interactionCreate", (interaction) =>{
 
             Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
                 var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
+                if(!mutedRole){
+                    return channel.send("Code 100 - Muted Role is invalid - database corruption?");
+                }
                 guild.members.fetch(targetID).then(targetMember =>{
                     targetMember.roles.remove(mutedRole).then(newMember =>{
                         Mutes.findOne({where: {memberID: targetID}}).then(row =>{
                             row.destroy();
-                        }).catch(console.log);
-                    }).catch(console.log);
-                }).catch(console.log);
-            }).catch(console.log);
+                        }).catch(e => {
+                            channel.send("Code 110 - Unknown Error with Database.")
+                            console.log(e);
+                        });
+                    }).catch(channel.send("Code 100 - Failed to add Mute Role to User."));
+                }).catch(channel.send("Code 104 - Invalid User or Member Argument."));
+            }).catch(e => {
+                channel.send("Code 110 - Unknown Error with Database.")
+                console.log(e);
+            });
         }
     }
     else if(interaction.name == "config"){
         if(args == null){
             return channel.send("Code 101 - No Arguments Supplied.");
         }else if(member.hasPermission("ADMINISTRATOR") == false){
-            return channel.send("Code 102 - Invalid Permissions.")
+            return channel.send("Code 103 - Invalid Permissions.")
         }else{
             args[0].options.forEach(arg => {
                 var conVar = arg.name;
                 var value = arg.value;
                 if(conVar == "muterole"){
-                    Configs.update({mutedRoleID: value},{where: {guildID: guild.id}});
+                    Configs.update({mutedRoleID: value},{where: {guildID: guild.id}}).catch(e => {
+                        channel.send("Code 110 - Unknown Error with Database.")
+                        console.log(e);
+                    });
                     return channel.send(`Updated muted role to <@&${value}> successfully.`);
                 }else if(conVar == "logchannel"){
-                    Configs.update({logChannelID: value},{where: {guildID: guild.id}});
+                    Configs.update({logChannelID: value},{where: {guildID: guild.id}}).catch(e => {
+                        channel.send("Code 110 - Unknown Error with Database.")
+                        console.log(e);
+                    });
                     return channel.send(`Updated log channel to <#${value}> successfully.`);
                 }
             });
         }
+    }
+    else if(interaction.name == "userinfo"){
+        var targetID;
+        if(args != null){
+            args.forEach(arg => {
+                if(arg.name == "mention" || arg.name == "userid"){
+                    targetID = arg.value;
+                }
+            });
+        }else{
+            targetID = member.id
+        }
+        
+        channel.send(targetID)
     }
 });
 
 /**
  * 'guildCreate' - Called when joining a new Guild
  * @param guild - The guild object from the API
+ * @todo Add automated log channel creation
  */
 client.on("guildCreate", async (guild) =>{
     Configs.create({
@@ -482,7 +539,9 @@ client.on("guildCreate", async (guild) =>{
         })
     }
     ).catch(console.log)
+
     var mutedRole = guild.roles.cache.find(r => r.name.toLowerCase() == "muted")
+    //Find or Create a 'Muted' Role.
     if(!mutedRole){
         try{
             guild.roles.create({
@@ -498,8 +557,13 @@ client.on("guildCreate", async (guild) =>{
             console.log(e)
         }
     }else{
-        Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}})
+        Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}}).catch(e => {
+            channel.send("Code 110 - Unknown Error with Database.")
+            console.log(e);
+        })
     }
+
+    //Find or Create a 'LogChannel'.
 })
 //Client Log In
 client.login(sysConfig.token);
