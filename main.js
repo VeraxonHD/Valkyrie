@@ -742,10 +742,10 @@ client.on("interactionCreate", (interaction) =>{
         })
     }
     else if(interaction.name == "reactrole"){
+        if(member.hasPermission("ADMINISTRATOR") == false){
+            return channel.send("Code 102 - Invalid Permissions.");
+        }
         if(args[0].name == "init"){
-            if(member.hasPermission("ADMINISTRATOR") == false){
-                return channel.send("Code 102 - Invalid Permissions.");
-            }
             //Argument Handling
             var channelID;
             var messageText = "Select one of the Emoji below to recieve the corresponding role.";
