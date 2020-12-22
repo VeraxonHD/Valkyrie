@@ -12,7 +12,7 @@ const logs = require("./util/logFunctions.js");
 const package = require("./package.json");
 
 //Globals
-const client = new Discord.Client();
+const client = new Discord.Client({partials: ["MESSAGE", "REACTION"]});
     client.interactions = new interactions.Client(
         sysConfig.token,
         "789655175048331283"
@@ -23,7 +23,8 @@ const sequelize = new Sequelize({
     storage: "./store/database.db",
     define: {
         freezeTableName: true
-    }
+    },
+    logging: false
 });
 
 //Database Definitions and Loading
@@ -124,6 +125,37 @@ const GuildUsers = sequelize.define("GuildUsers", {
         type: DataTypes.INTEGER
     }
 })
+const ReactionRoles = sequelize.define("ReactionRoles", {
+    reactionRoleID: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        unique: true,
+        allowNull: false,
+        autoIncrement: true
+    },
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    channelID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    messageID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    creatorGUID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    emojiID: {
+        type: DataTypes.STRING
+    },
+    roleID: {
+        type :DataTypes.STRING
+    }
+})
 
 //Automated/Frquent Functions
 client.setInterval(async () => {
@@ -159,6 +191,7 @@ client.on("ready", async () =>{
     await Mutes.sync();
     await Users.sync();
     await GuildUsers.sync();
+    await ReactionRoles.sync();
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
@@ -391,6 +424,69 @@ client.on("ready", async () =>{
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    //ReactRoles command
+    commands.createCommand({
+        name: "reactrole",
+        description: "Create, modify and delete reaction roles",
+        options: [
+            {
+                name: "init",
+                description: "Initialize a React Role 'Base' Message",
+                type: 1,
+                options: [
+                    {
+                        name: "channel",
+                        description: "The channel to initialize the Base Message",
+                        type: 7,
+                        required: true,
+                    },
+                    {
+                        name: "message",
+                        description: "The text you want the Base Message to display",
+                        type: 3
+                    }
+                ]
+            },
+            {
+                name: "add",
+                description: "Add a reaction to an initialized Base Message.",
+                type: 1,
+                options: [
+                    {
+                        name: "messageID",
+                        description: "The ID of the pre-initialized Base Message to add to",
+                        type: 3,
+                        required: true,
+                    },
+                    {
+                        name: "reactionEmoji",
+                        description: "The emoji you wish to add",
+                        type: 3,
+                        required: true
+                    },
+                    {
+                        name: "role",
+                        description: "The role you want to associate with this emoji",
+                        type: 8,
+                        required: true
+                    }
+                ]
+            },
+            {
+                name: "delete",
+                description: "Delete a Base Message",
+                type: 1,
+                options: [
+                    {
+                        name: "messageID",
+                        description: "The ID of the Base Message you want to delete",
+                        type: 3,
+                        required: true
+                    }
+                ]
+            }
+        ]
+    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
 
     //Delete Command Template
     //commands.deleteCommand("commandID", "guildID") //Local Command
@@ -645,14 +741,103 @@ client.on("interactionCreate", (interaction) =>{
             })
         })
     }
+    else if(interaction.name == "reactrole"){
+        if(args[0].name == "init"){
+            if(member.hasPermission("ADMINISTRATOR") == false){
+                return channel.send("Code 102 - Invalid Permissions.");
+            }
+            //Argument Handling
+            var channelID;
+            var messageText = "Select one of the Emoji below to recieve the corresponding role.";
+            args[0].options.forEach(arg =>{
+                if(arg.name == "channel"){
+                    channelID = arg.value;
+                }else if(arg.name == "message"){
+                    messageText = arg.value;
+                }
+            });
+
+            var rrChannel = guild.channels.resolve(channelID);
+            const embed = new Discord.MessageEmbed()
+                    .setAuthor(messageText)
+                    .setColor("ORANGE");
+            rrChannel.send({embed}).then(message =>{
+                ReactionRoles.create({
+                    guildID: guild.id,
+                    channelID: channel.id,
+                    messageID: message.id,
+                    creatorGUID: (guild.id + author.id),
+                    reactions: {}
+                }).catch(e=>{
+                    console.log(e);
+                    return channel.send("Error 110 - Unknown Database Error")
+                });
+            }).catch(e=>{
+                console.log(e);
+                return channel.send("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
+            });
+        }else if(args[0].name == "add"){
+            var messageID;
+            var reactionEmoji;
+            var roleID;
+
+            args[0].options.forEach(arg => {
+                if(arg.name == "messageid"){
+                    messageID = arg.value;
+                }else if(arg.name == "reactionemoji"){
+                    reactionEmoji = arg.value;
+                }else if(arg.name == "role"){
+                    roleID = arg.value;
+                }
+            });
+
+            ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
+                var rrGuild = client.guilds.cache.get(row.guildID);
+                var rrChannel = rrGuild.channels.resolve(row.channelID);
+                var rrData = row.reactions;
+
+                rrChannel.messages.fetch(row.messageID).then(rrMessage =>{
+                    var rrEmoji = client.emojis.resolve(reactionEmoji.split(":")[2].split(">")[0]);
+                    var rrRole = rrGuild.roles.resolve(roleID);
+                    if(rrMessage){
+                        if(rrEmoji){
+                            if(rrRole){
+                                rrMessage.react(rrEmoji).then(async m =>{
+                                    ReactionRoles.update({emojiID: rrEmoji.id}, {where: {messageID: rrMessage.id}})
+                                    ReactionRoles.update({roleID: rrRole.id}, {where: {messageID: rrMessage.id}})
+                                })
+                            }
+                        }
+                    }
+                })
+            })
+        }else if(args[0].name == "delete"){
+            var messageID = args[0].options[0].value
+
+            ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
+                var rrGuild = client.guilds.cache.get(row.guildID);
+                var rrChannel = rrGuild.channels.resolve(row.channelID);
+
+                rrChannel.messages.fetch(row.messageID).then(rrMessage =>{
+                    if(rrMessage){
+                        rrMessage.delete().then(async m =>{
+                            await ReactionRoles.destroy({where: {messageID: rrMessage.id}});
+                        })
+                    }
+                })
+            })
+        }
+    }
 });
 
 /**
  * 'guildCreate' - Called when joining a new Guild
  * @param guild - The guild object from the API
- * @todo Add automated log channel creation
  */
 client.on("guildCreate", async (guild) =>{
+    var mutedRoleExists = true;
+    var logChannelExists = true;
+
     Configs.create({
         guildID: guild.id,
         ownerID: guild.ownerID
@@ -664,7 +849,7 @@ client.on("guildCreate", async (guild) =>{
     }
     ).catch(console.log)
 
-    var mutedRole = guild.roles.cache.find(r => r.name.toLowerCase() == "muted")
+    var mutedRole = guild.roles.cache.find(r => r.name.toLowerCase() == "muted");
     //Find or Create a 'Muted' Role.
     if(!mutedRole){
         try{
@@ -678,16 +863,60 @@ client.on("guildCreate", async (guild) =>{
                 Configs.update({mutedRoleID: newMutedRole.id}, {where:{guildID: guild.id}})
             })
         }catch(e){
-            console.log(e)
+            mutedRoleExists = false;
+            console.log(e);
+            //return channel.send("Code 120 - Bot has insufficient Permissions to Create a Role.");
         }
     }else{
         Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}}).catch(e => {
-            channel.send("Code 110 - Unknown Error with Database.")
             console.log(e);
+            //return channel.send("Code 110 - Unknown Error with Database.");
         })
     }
 
-    //Find or Create a 'LogChannel'.
+    var logChannel = guild.channels.cache.find(c => c.name.toLowerCase === "logchannel");
+    if(!logChannel){
+        try{
+            guild.channels.create("logchannel", {
+                type: "text",
+                topic: "Log channel for Valkyrie"
+            }).then(newLogChannel => {
+                Configs.update({logChannelID: newLogChannel.id}, {where: {guildID: guild.id}}).catch(e=>{
+                    console.log(e);
+                    //return channel.send("Code 110 - Unknown Error with Database.");
+                })
+            })
+        }catch(e){
+            logChannelExists = false;
+            console.log(e);
+            //return channel.send("Code 120 - Bot has insufficient Permissions to Create a Channel.");
+        }
+    }else{
+        Configs.update({logChannelID: logChannel.id}, {where:{guildID: guild.id}}).catch(e => {
+            console.log(e);
+            //return channel.send("Code 110 - Unknown Error with Database.");
+        })
+    }
+
+    const embed = new Discord.MessageEmbed()
+        .setColor("GREEN")
+        .setTimestamp(Date.now())
+        .setAuthor("Welcome to the Valkyrie family!")
+        .addField("Support Discord", "Need help? Join https://discord.gg/NvqK5W9");
+    if(mutedRoleExists == false){
+        embed.addField("I couldn't find or create a muted role", "If you already have one, use `/config muterole` to change the server config");
+    }else{
+        embed.addField("I automatically created/found an existing mute role", "Feel free to edit the name, position or permissions however you want!");
+    }
+    if(logChannelExists == false){
+        embed.addField("I couldn't find or create a log channel", "If you already have one, use `/config logchannel` to change the server config");
+    }else{
+        embed.addField("I automatically created/found an existing log channel", "Feel free to edit the name, position or permissions however you want!");
+    }
+
+    guild.members.fetch(guild.ownerID).then(guildOwner =>{
+        guildOwner.send({embed})
+    });
 })
 
 /**
@@ -734,5 +963,52 @@ client.on("message", async (message) =>{
         return;
     }
 });
+
+client.on("messageReactionAdd", async (messageReaction, user) => {
+
+    if(user.id === client.user.id) return;
+
+    if(messageReaction.message.partial) await messageReaction.message.fetch();
+    var message = messageReaction.message;
+    var emojiID = messageReaction.emoji.id;
+
+    ReactionRoles.findOne({where: {[Op.and]: [{messageID: message.id},{emojiID: emojiID}]}}).then(row => {
+        if(!row) return;
+        var role = message.guild.roles.resolve(row.roleID);
+
+        try{
+            message.guild.members.fetch(user.id).then(member =>{
+                member.roles.add(role);
+                console.log(`Added ${role.name} to ${member.user.tag}`);
+            })
+        }catch(e){
+            console.log(e);
+        }
+    })
+})
+
+client.on("messageReactionRemove", async (messageReaction, user) => {
+
+    if(user.id === client.user.id) return;
+
+    if(messageReaction.message.partial) await messageReaction.message.fetch();
+    var message = messageReaction.message;
+    var emojiID = messageReaction.emoji.id;
+
+    ReactionRoles.findOne({where: {[Op.and]: [{messageID: message.id},{emojiID: emojiID}]}}).then(row => {
+        if(!row) return;
+        var role = message.guild.roles.resolve(row.roleID);
+
+        try{
+            message.guild.members.fetch(user.id).then(member =>{
+                member.roles.remove(role);
+                console.log(`Took ${role.name} from ${member.user.tag}`);
+            })
+        }catch(e){
+            console.log(e);
+        }
+    })
+})
+
 //Client Log In
 client.login(sysConfig.token);

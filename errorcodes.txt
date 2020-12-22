@@ -1,0 +1,9 @@
+Code 100 - Unknown.
+Code 101 - No Arguments Supplied.
+Code 102 - Invalid Argument.
+Code 103 - Invalid Permissions
+Code 104 - Invalid User or Member Argument.
+
+Code 110 - Unknown Database Error.
+
+Code 120 - Bot has insufficient Permissions.
