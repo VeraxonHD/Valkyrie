@@ -3,6 +3,7 @@ const Discord = require("discord.js");
 const interactions = require("discord-slash-commands-client");
 const { Sequelize, DataTypes, Op } = require("sequelize");
 const ms = require("ms");
+const df = require("dateformat");
 
 //File Loads
 const sysConfig = require("./store/config.json");
@@ -87,6 +88,9 @@ const Users = sequelize.define("Users", {
     },
     lastSeenChannelID: {
         type: DataTypes.STRING
+    },
+    lastSeenTime: {
+        type: DataTypes.DATE
     }
 });
 const GuildUsers = sequelize.define("GuildUsers", {
@@ -369,7 +373,7 @@ client.on("ready", async () =>{
                 ]
             }
         ]
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //UserInfo Command
     commands.createCommand({
         name: "userinfo",
@@ -386,10 +390,14 @@ client.on("ready", async () =>{
                 type: 3
             }
         ]
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+
+    //Delete Command Template
+    //commands.deleteCommand("commandID", "guildID") //Local Command
+    //commands.deleteCommand("commandID") //Global Command
 
     //List all Commands
-    //common.listCommands(commands);
+    common.listCommands(commands);
 });
 
 /**
@@ -429,10 +437,14 @@ client.on("interactionCreate", (interaction) =>{
                     channel.send(`User ${targetMember.displayName} was banned from the server. Reason: ${reason}. <:banhammer:722877640201076775>`)
                     Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
                         guild.channels.resolve(guildConfig.logChannelID).send(logs.logBan(targetMember, reason, member));
-                    }).catch(e =>{
-                        channel.send("Code 110 - Unknown Database Error.");
+                    }).then(()=>{
+                        var guildUserCompositeKey = guild.id + targetID
+                        Users.increment("globalBanCount",{where:{userID: targetID}});
+                        GuildUsers.increment("guildBanCount",{where:{guildUserID: guildUserCompositeKey}});
+                    }).catch(e => {
                         console.log(e);
-                    })
+                        return channel.send("Code 110 - Unknown Error with Database.");
+                    });
                     
                 }else{
                     return channel.send("Code 100 - Unknown Error Occurred.");
@@ -462,10 +474,14 @@ client.on("interactionCreate", (interaction) =>{
                     channel.send(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
                     Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
                         guild.channels.resolve(guildConfig.logChannelID).send(logs.logKick(targetMember, reason, member));
-                    }).catch(e =>{
-                        channel.send("Code 110 - Unknown Database Error.");
+                    }).then(()=>{
+                        var guildUserCompositeKey = guild.id + targetID
+                        Users.increment("globalKickCount",{where:{userID: targetID}});
+                        GuildUsers.increment("guildKickCount",{where:{guildUserID: guildUserCompositeKey}});
+                    }).catch(e => {
                         console.log(e);
-                    })
+                        return channel.send("Code 110 - Unknown Error with Database.");
+                    });
                 }else{
                     return channel.send("Code 100 - Unknown Error Occurred.")
                 }
@@ -512,16 +528,26 @@ client.on("interactionCreate", (interaction) =>{
                             memberID: targetID,
                             endsAt: endsTimestamp,
                             reason: reason
+                        }).then(()=>{
+                            var guildUserCompositeKey = guild.id + targetID
+                            Users.increment("globalMuteCount",{where:{userID: targetID}});
+                            GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
                         }).catch(e => {
                             channel.send("Code 110 - Unknown Error with Database.");
                             console.log(e);
                         });
                         guild.channels.resolve(guildConfig.logChannelID).send(logs.logMute(targetMember, duration, reason, member));
-                    }).catch(channel.send("Code 100 - Failed to add Mute Role to User."));
-                }).catch(channel.send("Code 104 - Invalid User or Member Argument."));
+                    }).catch(e=>{
+                        console.log(e);
+                        return channel.send("Code 100 - Failed to add Mute Role to User.");
+                    });
+                }).catch( e=>{
+                    console.log(e);;
+                    return channel.send("Code 104 - Invalid User or Member Argument.");
+                });
             }).catch(e => {
-                channel.send("Code 110 - Unknown Error with Database.");
                 console.log(e);
+                return channel.send("Code 110 - Unknown Error with Database.");
             });
         }
     }
@@ -551,11 +577,17 @@ client.on("interactionCreate", (interaction) =>{
                             channel.send("Code 110 - Unknown Error with Database.")
                             console.log(e);
                         });
-                    }).catch(channel.send("Code 100 - Failed to add Mute Role to User."));
-                }).catch(channel.send("Code 104 - Invalid User or Member Argument."));
+                    }).catch(e =>{
+                        console.log(e);
+                        return channel.send("Code 100 - Failed to add Mute Role to User.");
+                    });
+                }).catch(e =>{
+                    console.log(e);
+                    return channel.send("Code 104 - Invalid User or Member Argument.");
+                });
             }).catch(e => {
-                channel.send("Code 110 - Unknown Error with Database.")
                 console.log(e);
+                return channel.send("Code 110 - Unknown Error with Database.")
             });
         }
     }
@@ -587,16 +619,31 @@ client.on("interactionCreate", (interaction) =>{
     else if(interaction.name == "userinfo"){
         var targetID;
         if(args != null){
-            args.forEach(arg => {
-                if(arg.name == "mention" || arg.name == "userid"){
-                    targetID = arg.value;
-                }
-            });
+            targetID = args[0].value;
         }else{
-            targetID = member.id
+            targetID = member.id;
         }
-        
-        channel.send(targetID)
+
+        guild.members.fetch(targetID).then(targetMember =>{
+            Users.findOne({where: {userID: targetMember.id}}).then(userData => {
+                var guildUserCompositeKey = guild.id + targetMember.id;
+                var lastSeenChannelName = client.guilds.cache.get(userData.lastSeenGuildID).channels.resolve(userData.lastSeenChannelID);
+                var lastSeenGuildName = client.guilds.cache.get(userData.lastSeenGuildID).name;
+                GuildUsers.findOne({where: {guildUserID: guildUserCompositeKey}}).then(guildUserData =>{
+                    const embed = new Discord.MessageEmbed()
+                        .setAuthor(`UserInfo for ${targetMember.user.tag}`)
+                        .addField("General User Data", `**User ID**: ${targetMember.id}\n**Account Mention**: ${targetMember}\n**Is a Bot?**: ${targetMember.user.bot}\n**Created At**: ${df(targetMember.user.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}`)
+                        .addField("Global Valkyrie Data", `**Messages Sent**: ${userData.globalMsgCount}\n**Last Seen** in ${lastSeenGuildName} (${lastSeenChannelName}) at ${df(userData.lastSeenTime, "dd/mm/yyyy HH:MM:ss Z")}`)
+                        .addField("Global Infractions", `**Warns**:${userData.globalMuteCount}\n**Mutes**:${userData.globalMuteCount}\n**Kicks**:${userData.globalKickCount}\n**Bans**:${userData.globalBanCount}`, true)
+                        .addField("This Guild Data", `**Messages Sent**: ${guildUserData.guildMsgCount}\n**Joined At**: ${df(guildUserData.createdAt, "dd/mm/yyyy HH:MM:ss Z")}`)
+                        .addField("This Guild Infractions", `**Warns**:${guildUserData.guildWarnCount}\n**Mutes**:${guildUserData.guildMuteCount}\n**Kicks**:${guildUserData.guildKickCount}\n**Bans**:${guildUserData.guildBanCount}`, true)
+                        .setColor("#00C597")
+                        .setFooter("userinfo.interactions.valkyrie")
+                        .setTimestamp(new Date());
+                channel.send({embed})
+                })
+            })
+        })
     }
 });
 
@@ -660,7 +707,8 @@ client.on("message", async (message) =>{
                     globalKickCount: 0,
                     globalBanCount: 0,
                     lastSeenGuildID: message.guild.id,
-                    lastSeenChannelID: message.channel.id
+                    lastSeenChannelID: message.channel.id,
+                    lastSeenTime: Date.now()
                 });
             }else{
                 Users.increment('globalMsgCount', {where: {userID: message.author.id}});
