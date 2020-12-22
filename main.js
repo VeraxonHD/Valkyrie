@@ -486,7 +486,7 @@ client.on("ready", async () =>{
                 ]
             }
         ]
-    }, "409365548766461952").then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
 
     //Delete Command Template
     //commands.deleteCommand("commandID", "guildID") //Local Command
