@@ -1,9 +1,10 @@
 {
   "name": "valkyrie",
-  "version": "Alpha 0.5.0",
+  "version": "Alpha 0.6.0",
   "description": "A new form of Discord Moderation Bot",
   "main": "main.js",
   "dependencies": {
+    "dateformat": "^4.3.1",
     "discord-slash-commands": "^1.0.1",
     "discord-slash-commands-client": "^1.0.3",
     "discord.js": "^12.5.0",
