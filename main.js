@@ -30,7 +30,8 @@ const Configs = sequelize.define("Configs", {
     guildID: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        unique: true,
+        primaryKey: true
     },
     ownerID: {
         type: DataTypes.STRING,
@@ -642,10 +643,14 @@ client.on("guildCreate", async (guild) =>{
     //Find or Create a 'LogChannel'.
 })
 
+/**
+ * 'message' - Called when a message is sent in a monitored Guild
+ * @param message - The message object
+ */
 client.on("message", async (message) =>{
     if(message.channel.type === "text" && message.author.id != client.user.id){
         var guildUserCompositeKey = message.guild.id + message.author.id;
-        Users.findOne({where: {guildUserID: guildUserCompositeKey}}).then(user => {
+        Users.findOne({where: {userID: message.author.id}}).then(user => {
             if(!user){
                 Users.create({
                     userID: message.author.id,
@@ -658,7 +663,7 @@ client.on("message", async (message) =>{
                     lastSeenChannelID: message.channel.id
                 });
             }else{
-
+                Users.increment('globalMsgCount', {where: {userID: message.author.id}});
             }
         });
         GuildUsers.findOne({where: {guildUserID: guildUserCompositeKey}}).then(guildUser => {
