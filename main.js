@@ -143,17 +143,17 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
     },
     messageID: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
     },
     creatorGUID: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    emojiID: {
-        type: DataTypes.STRING
-    },
-    roleID: {
-        type :DataTypes.STRING
+    reactions: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: {}
     }
 })
 
@@ -803,8 +803,12 @@ client.on("interactionCreate", (interaction) =>{
                         if(rrEmoji){
                             if(rrRole){
                                 rrMessage.react(rrEmoji).then(async m =>{
-                                    ReactionRoles.update({emojiID: rrEmoji.id}, {where: {messageID: rrMessage.id}})
-                                    ReactionRoles.update({roleID: rrRole.id}, {where: {messageID: rrMessage.id}})
+                                    rrData[rrEmoji.id] = {
+                                        "emojiID": rrEmoji.id,
+                                        "roleID": rrRole.id,
+                                        "messageID": rrMessage.id
+                                    }
+                                    ReactionRoles.update({reactions: rrData}, {where: {messageID: rrMessage.id}});
                                 })
                             }
                         }
@@ -972,9 +976,9 @@ client.on("messageReactionAdd", async (messageReaction, user) => {
     var message = messageReaction.message;
     var emojiID = messageReaction.emoji.id;
 
-    ReactionRoles.findOne({where: {[Op.and]: [{messageID: message.id},{emojiID: emojiID}]}}).then(row => {
+    ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
         if(!row) return;
-        var role = message.guild.roles.resolve(row.roleID);
+        var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
 
         try{
             message.guild.members.fetch(user.id).then(member =>{
@@ -995,14 +999,14 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
     var message = messageReaction.message;
     var emojiID = messageReaction.emoji.id;
 
-    ReactionRoles.findOne({where: {[Op.and]: [{messageID: message.id},{emojiID: emojiID}]}}).then(row => {
+    ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
         if(!row) return;
-        var role = message.guild.roles.resolve(row.roleID);
+        var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
 
         try{
             message.guild.members.fetch(user.id).then(member =>{
                 member.roles.remove(role);
-                console.log(`Took ${role.name} from ${member.user.tag}`);
+                console.log(`Removed ${role.name} from ${member.user.tag}`);
             })
         }catch(e){
             console.log(e);
