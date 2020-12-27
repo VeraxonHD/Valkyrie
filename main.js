@@ -1016,3 +1016,8 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
 
 //Client Log In
 client.login(sysConfig.token);
+
+//Handle unhandled rejections
+process.on("unhandledRejection", err => {
+    console.error("Uncaught Promise Error: \n", err);
+});
