@@ -156,6 +156,22 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
         defaultValue: {}
     }
 })
+const Warns = sequelize.define("Mutes", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    moderatorID: {
+        type: DataTypes.STRING
+    },
+    reason: {
+        type: DataTypes.STRING
+    }
+});
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -176,6 +192,10 @@ exports.getGuildUsersTable = () =>{
 
 exports.getReactionRolesTable = () =>{
     return ReactionRoles;
+}
+
+exports.getWarnsTable = () =>{
+    return Warns;
 }
 
 //Client Getter
@@ -218,6 +238,7 @@ client.on("ready", async () =>{
     await Users.sync();
     await GuildUsers.sync();
     await ReactionRoles.sync();
+    await Mutes.sync();
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
@@ -513,6 +534,10 @@ client.on("ready", async () =>{
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    /*commands.createCommand({
+        name: "warn",
+        description: "Sends a formal warning to the user"
+    })*/
 
     //Delete Command Template
     //commands.deleteCommand("commandID", "guildID") //Local Command
