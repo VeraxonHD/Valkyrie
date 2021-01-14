@@ -15,7 +15,7 @@ const package = require("./package.json");
 const client = new Discord.Client({partials: ["MESSAGE", "REACTION"]});
     client.interactions = new interactions.Client(
         sysConfig.token,
-        "789655175048331283"
+        sysConfig.botID
     );
 const commands = client.interactions;
 const sequelize = new Sequelize({
@@ -156,6 +156,52 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
         defaultValue: {}
     }
 })
+const Warns = sequelize.define("Mutes", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    moderatorID: {
+        type: DataTypes.STRING
+    },
+    reason: {
+        type: DataTypes.STRING
+    }
+});
+
+//DB Table Getters
+exports.getConfigsTable = () =>{
+    return Configs;
+}
+
+exports.getMutesTable = () =>{
+    return Mutes;
+}
+
+exports.getUsersTable = () =>{
+    return Users;
+}
+
+exports.getGuildUsersTable = () =>{
+    return GuildUsers;
+}
+
+exports.getReactionRolesTable = () =>{
+    return ReactionRoles;
+}
+
+exports.getWarnsTable = () =>{
+    return Warns;
+}
+
+//Client Getter
+exports.getClient = () =>{
+    return client;
+}
 
 //Automated/Frquent Functions
 client.setInterval(async () => {
@@ -165,8 +211,9 @@ client.setInterval(async () => {
             client.guilds.fetch(row.guildID).then(rGuild =>{
                 rGuild.members.fetch(row.memberID).then(rMember =>{
                     Configs.findOne({where: {guildID: rGuild.id}}).then(guildConfig =>{
-                        if(rMember.roles.cache.has(guildConfig.mutedRoleID)){
-                            rMember.roles.remove(rGuild.roles.cache.get(guildConfig.mutedRoleID));
+                        var mutedRole = rGuild.roles.cache.get(guildConfig.mutedRoleID)
+                        if(rMember.roles.cache.has(mutedRole.id)){
+                            rMember.roles.remove(mutedRole);
                         }
                         row.destroy();
                     });
@@ -192,6 +239,7 @@ client.on("ready", async () =>{
     await Users.sync();
     await GuildUsers.sync();
     await ReactionRoles.sync();
+    await Mutes.sync();
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
@@ -487,6 +535,49 @@ client.on("ready", async () =>{
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
+    //Warn Command
+    commands.createCommand({
+        name: "warn",
+        description: "Warns a Member.",
+        options: [
+            {
+                name: "user",
+                description: "Warn a user by User ID",
+                type: 1,
+                options: [
+                    {
+                        name: "UserID",
+                        description: "The User's Unique Snowflake ID",
+                        type: 3,
+                        required: true
+                    },
+                    {
+                        name: "Reason",
+                        description: "The reason for their warn",
+                        type: 3
+                    }
+                ]
+            },
+            {
+                name: "mention",
+                description: "Warn a user my mention",
+                type: 1,
+                options: [
+                    {
+                        name: "Mention",
+                        description: "The User's @Mention",
+                        type: 6,
+                        required: true
+                    },
+                    {
+                        name: "Reason",
+                        description: "The reason for their warn",
+                        type: 3
+                    }
+                ]
+            }
+        ]
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
 
     //Delete Command Template
     //commands.deleteCommand("commandID", "guildID") //Local Command
@@ -501,335 +592,14 @@ client.on("ready", async () =>{
  * @param interaction - The interaction object from the API
  */
 client.on("interactionCreate", (interaction) =>{
-    //Defs
-    const guild = interaction.guild;
-    const channel = interaction.channel;
-    const member = interaction.member;
-    const author = interaction.author;
-    var args = interaction.options || null;
-
-    if(interaction.name == "ping"){
-        interaction.channel.send(`Pong! Average Service Latency: \`${client.ws.ping}ms\`.`);
-    }
-    else if(interaction.name == "ban"){
-        if(args == null){
-            return channel.send("Code 101 - No Arguments Supplied.");
-        }else if(member.hasPermission("BAN_MEMBERS") == false){
-            return channel.send("Code 103 - Invalid Permissions.")
-        }else{
-            var targetID;
-            var reason = "No Reason Specified";
-            args[0].options.forEach(arg => {
-                if(arg.name == "mention" || arg.name == "userid"){
-                    targetID = arg.value;
-                }else if(arg.name == "reason"){
-                    reason = arg.value;
-                }
-            });
-
-            guild.members.fetch(targetID).then(targetMember =>{
-                if(targetMember.bannable){
-                    targetMember.ban({days: 7, reason: reason});
-                    channel.send(`User ${targetMember.displayName} was banned from the server. Reason: ${reason}. <:banhammer:722877640201076775>`)
-                    Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
-                        guild.channels.resolve(guildConfig.logChannelID).send(logs.logBan(targetMember, reason, member));
-                    }).then(()=>{
-                        var guildUserCompositeKey = guild.id + targetID
-                        Users.increment("globalBanCount",{where:{userID: targetID}});
-                        GuildUsers.increment("guildBanCount",{where:{guildUserID: guildUserCompositeKey}});
-                    }).catch(e => {
-                        console.log(e);
-                        return channel.send("Code 110 - Unknown Error with Database.");
-                    });
-                    
-                }else{
-                    return channel.send("Code 100 - Unknown Error Occurred.");
-                }
-            }); 
-        }
-    }
-    else if(interaction.name == "kick"){
-        if(args == null){
-            return channel.send("Code 101 - No Arguments Supplied.");
-        }else if(member.hasPermission("KICK_MEMBERS") == false){
-            return channel.send("Code 103 - Invalid Permissions.")
-        }else{
-            var targetID;
-            var reason = "No Reason Specified";
-            args[0].options.forEach(arg => {
-                if(arg.name == "mention" || arg.name == "userid"){
-                    targetID = arg.value;
-                }else if(arg.name == "reason"){
-                    reason = arg.value;
-                }
-            });
-
-            guild.members.fetch(targetID).then(targetMember =>{
-                if(targetMember.kickable){
-                    targetMember.kick(reason);
-                    channel.send(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
-                    Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
-                        guild.channels.resolve(guildConfig.logChannelID).send(logs.logKick(targetMember, reason, member));
-                    }).then(()=>{
-                        var guildUserCompositeKey = guild.id + targetID
-                        Users.increment("globalKickCount",{where:{userID: targetID}});
-                        GuildUsers.increment("guildKickCount",{where:{guildUserID: guildUserCompositeKey}});
-                    }).catch(e => {
-                        console.log(e);
-                        return channel.send("Code 110 - Unknown Error with Database.");
-                    });
-                }else{
-                    return channel.send("Code 100 - Unknown Error Occurred.")
-                }
-            }); 
-        }
-    }
-    else if(interaction.name == "mute"){
-        if(args == null){
-            return channel.send("Code 101 - No Arguments Supplied.");
-        }else if(member.hasPermission("MANAGE_MESSAGES") == false){
-            return channel.send("Code 103 - Invalid Permissions.")
-        }else{
-            var targetID;
-            var duration = -1;
-            var reason = "No Reason Specified";
-            args[0].options.forEach(arg => {
-                if(arg.name == "mention" || arg.name == "userid"){
-                    targetID = arg.value;
-                }else if(arg.name == "duration"){
-                    duration = arg.value;
-                }else if(arg.name == "reason"){
-                    reason = arg.value;
-                }
-            });
-
-            var endsTimestamp;
-            try{
-                endsTimestamp = Date.now() + ms(duration);
-            }catch{
-                return channel.send("Code 102 - Invalid Argument: 'duration'.\nMust follow (int)(scale)\nExample: ```'10s' - 10 seconds\n'30m' - 30 minutes\n'2h' - 2 Hours\nFull list of examples: https://github.com/vercel/ms#examples```")
-            }
-
-            Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
-                var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
-                if(!mutedRole){
-                    return channel.send("Code 100 - Muted Role is invalid - database corruption?");
-                }
-                guild.members.fetch(targetID).then(targetMember =>{
-                    targetMember.roles.add(mutedRole).then(newMember =>{
-                        channel.send(`**${newMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
-                        newMember.send(`You have been Muted in **${guild.name}** for **${duration}**. Reason: **${reason}**.`);
-                        Mutes.create({
-                            guildID: guild.id,
-                            memberID: targetID,
-                            endsAt: endsTimestamp,
-                            reason: reason
-                        }).then(()=>{
-                            var guildUserCompositeKey = guild.id + targetID
-                            Users.increment("globalMuteCount",{where:{userID: targetID}});
-                            GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
-                        }).catch(e => {
-                            channel.send("Code 110 - Unknown Error with Database.");
-                            console.log(e);
-                        });
-                        guild.channels.resolve(guildConfig.logChannelID).send(logs.logMute(targetMember, duration, reason, member));
-                    }).catch(e=>{
-                        console.log(e);
-                        return channel.send("Code 100 - Failed to add Mute Role to User.");
-                    });
-                }).catch( e=>{
-                    console.log(e);;
-                    return channel.send("Code 104 - Invalid User or Member Argument.");
-                });
-            }).catch(e => {
-                console.log(e);
-                return channel.send("Code 110 - Unknown Error with Database.");
-            });
-        }
-    }
-    else if(interaction.name == "unmute"){
-        if(args == null){
-            return channel.send("Code 101 - No Arguments Supplied.");
-        }else if(member.hasPermission("MANAGE_MESSAGES") == false){
-            return channel.send("Code 103 - Invalid Permissions.")
-        }else{
-            var targetID;
-            args[0].options.forEach(arg => {
-                if(arg.name == "mention" || arg.name == "userid"){
-                    targetID = arg.value;
-                }
-            });
-
-            Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
-                var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
-                if(!mutedRole){
-                    return channel.send("Code 100 - Muted Role is invalid - database corruption?");
-                }
-                guild.members.fetch(targetID).then(targetMember =>{
-                    targetMember.roles.remove(mutedRole).then(newMember =>{
-                        Mutes.findOne({where: {memberID: targetID}}).then(row =>{
-                            row.destroy();
-                        }).catch(e => {
-                            channel.send("Code 110 - Unknown Error with Database.")
-                            console.log(e);
-                        });
-                    }).catch(e =>{
-                        console.log(e);
-                        return channel.send("Code 100 - Failed to add Mute Role to User.");
-                    });
-                }).catch(e =>{
-                    console.log(e);
-                    return channel.send("Code 104 - Invalid User or Member Argument.");
-                });
-            }).catch(e => {
-                console.log(e);
-                return channel.send("Code 110 - Unknown Error with Database.")
-            });
-        }
-    }
-    else if(interaction.name == "config"){
-        if(args == null){
-            return channel.send("Code 101 - No Arguments Supplied.");
-        }else if(member.hasPermission("ADMINISTRATOR") == false){
-            return channel.send("Code 103 - Invalid Permissions.")
-        }else{
-            args[0].options.forEach(arg => {
-                var conVar = arg.name;
-                var value = arg.value;
-                if(conVar == "muterole"){
-                    Configs.update({mutedRoleID: value},{where: {guildID: guild.id}}).catch(e => {
-                        channel.send("Code 110 - Unknown Error with Database.")
-                        console.log(e);
-                    });
-                    return channel.send(`Updated muted role to <@&${value}> successfully.`);
-                }else if(conVar == "logchannel"){
-                    Configs.update({logChannelID: value},{where: {guildID: guild.id}}).catch(e => {
-                        channel.send("Code 110 - Unknown Error with Database.")
-                        console.log(e);
-                    });
-                    return channel.send(`Updated log channel to <#${value}> successfully.`);
-                }
-            });
-        }
-    }
-    else if(interaction.name == "userinfo"){
-        var targetID;
-        if(args != null){
-            targetID = args[0].value;
-        }else{
-            targetID = member.id;
-        }
-
-        guild.members.fetch(targetID).then(targetMember =>{
-            Users.findOne({where: {userID: targetMember.id}}).then(userData => {
-                var guildUserCompositeKey = guild.id + targetMember.id;
-                var lastSeenChannelName = client.guilds.cache.get(userData.lastSeenGuildID).channels.resolve(userData.lastSeenChannelID);
-                var lastSeenGuildName = client.guilds.cache.get(userData.lastSeenGuildID).name;
-                GuildUsers.findOne({where: {guildUserID: guildUserCompositeKey}}).then(guildUserData =>{
-                    const embed = new Discord.MessageEmbed()
-                        .setAuthor(`UserInfo for ${targetMember.user.tag}`)
-                        .addField("General User Data", `**User ID**: ${targetMember.id}\n**Account Mention**: ${targetMember}\n**Is a Bot?**: ${targetMember.user.bot}\n**Created At**: ${df(targetMember.user.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}`)
-                        .addField("Global Valkyrie Data", `**Messages Sent**: ${userData.globalMsgCount}\n**Last Seen** in ${lastSeenGuildName} (${lastSeenChannelName}) at ${df(userData.lastSeenTime, "dd/mm/yyyy HH:MM:ss Z")}`)
-                        .addField("Global Infractions", `**Warns**:${userData.globalMuteCount}\n**Mutes**:${userData.globalMuteCount}\n**Kicks**:${userData.globalKickCount}\n**Bans**:${userData.globalBanCount}`, true)
-                        .addField("This Guild Data", `**Messages Sent**: ${guildUserData.guildMsgCount}\n**Joined At**: ${df(guildUserData.createdAt, "dd/mm/yyyy HH:MM:ss Z")}`)
-                        .addField("This Guild Infractions", `**Warns**:${guildUserData.guildWarnCount}\n**Mutes**:${guildUserData.guildMuteCount}\n**Kicks**:${guildUserData.guildKickCount}\n**Bans**:${guildUserData.guildBanCount}`, true)
-                        .setColor("#00C597")
-                        .setFooter("userinfo.interactions.valkyrie")
-                        .setTimestamp(new Date());
-                channel.send({embed})
-                })
-            })
-        })
-    }
-    else if(interaction.name == "reactrole"){
-        if(member.hasPermission("ADMINISTRATOR") == false){
-            return channel.send("Code 102 - Invalid Permissions.");
-        }
-        if(args[0].name == "init"){
-            //Argument Handling
-            var channelID;
-            var messageText = "Select one of the Emoji below to recieve the corresponding role.";
-            args[0].options.forEach(arg =>{
-                if(arg.name == "channel"){
-                    channelID = arg.value;
-                }else if(arg.name == "message"){
-                    messageText = arg.value;
-                }
-            });
-
-            var rrChannel = guild.channels.resolve(channelID);
-            const embed = new Discord.MessageEmbed()
-                    .setAuthor(messageText)
-                    .setColor("ORANGE");
-            rrChannel.send({embed}).then(message =>{
-                ReactionRoles.create({
-                    guildID: guild.id,
-                    channelID: channel.id,
-                    messageID: message.id,
-                    creatorGUID: (guild.id + author.id),
-                    reactions: {}
-                }).catch(e=>{
-                    console.log(e);
-                    return channel.send("Error 110 - Unknown Database Error")
-                });
-            }).catch(e=>{
-                console.log(e);
-                return channel.send("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
-            });
-        }else if(args[0].name == "add"){
-            var messageID;
-            var reactionEmoji;
-            var roleID;
-
-            args[0].options.forEach(arg => {
-                if(arg.name == "messageid"){
-                    messageID = arg.value;
-                }else if(arg.name == "reactionemoji"){
-                    reactionEmoji = arg.value;
-                }else if(arg.name == "role"){
-                    roleID = arg.value;
-                }
-            });
-
-            ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
-                var rrGuild = client.guilds.cache.get(row.guildID);
-                var rrChannel = rrGuild.channels.resolve(row.channelID);
-                var rrData = row.reactions;
-
-                rrChannel.messages.fetch(row.messageID).then(rrMessage =>{
-                    var rrEmoji = client.emojis.resolve(reactionEmoji.split(":")[2].split(">")[0]);
-                    var rrRole = rrGuild.roles.resolve(roleID);
-                    if(rrMessage){
-                        if(rrEmoji){
-                            if(rrRole){
-                                rrMessage.react(rrEmoji).then(async m =>{
-                                    rrData[rrEmoji.id] = {
-                                        "emojiID": rrEmoji.id,
-                                        "roleID": rrRole.id,
-                                        "messageID": rrMessage.id
-                                    }
-                                    ReactionRoles.update({reactions: rrData}, {where: {messageID: rrMessage.id}});
-                                })
-                            }
-                        }
-                    }
-                })
-            })
-        }else if(args[0].name == "delete"){
-            var messageID = args[0].options[0].value
-
-            ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
-                var rrGuild = client.guilds.cache.get(row.guildID);
-                var rrChannel = rrGuild.channels.resolve(row.channelID);
-
-                rrChannel.messages.fetch(row.messageID).then(rrMessage =>{
-                    if(rrMessage){
-                        rrMessage.delete().then(async m =>{
-                            await ReactionRoles.destroy({where: {messageID: rrMessage.id}});
-                        })
-                    }
-                })
-            })
+    var cmdFile = require(`./commands/${interaction.name}.js`);
+    if(!cmdFile){
+        return;
+    }else{
+        try{
+            cmdFile.execute(interaction);
+        }catch(e){
+            console.log(e);
         }
     }
 });
@@ -1019,5 +789,5 @@ client.login(sysConfig.token);
 
 //Handle unhandled rejections
 process.on("unhandledRejection", err => {
-    console.error("Uncaught Promise Error: \n", err);
+    console.error(`An Unhandled Rejection occured. File: ${err.fileName}\nFull Error: ${err}`);
 });
