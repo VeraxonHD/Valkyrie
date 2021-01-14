@@ -53,3 +53,21 @@ exports.logKick = (targetMember, reason, moderator)=>{
         .setFooter("logKick.logs.valkyrie");
     return {embed};
 }
+
+/**
+ * Generates a Warn log embed
+ * @param {Discord.GuildMember} targetMember 
+ * @param {String} reason
+ * @param {Discord.GuildMember} moderator
+ */
+exports.logWarn = (targetMember, reason, moderator)=>{
+    const Discord = require("discord.js");
+    const embed = new Discord.MessageEmbed()
+        .setAuthor("Member Warned")
+        .addField("Member", targetMember, true)
+        .addField("Reason", reason, true)
+        .addField("Moderator", moderator)
+        .setColor("RED")
+        .setFooter("logWarn.logs.valkyrie");
+    return {embed};
+}

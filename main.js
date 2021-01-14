@@ -211,8 +211,9 @@ client.setInterval(async () => {
             client.guilds.fetch(row.guildID).then(rGuild =>{
                 rGuild.members.fetch(row.memberID).then(rMember =>{
                     Configs.findOne({where: {guildID: rGuild.id}}).then(guildConfig =>{
-                        if(rMember.roles.cache.has(guildConfig.mutedRoleID)){
-                            rMember.roles.remove(rGuild.roles.cache.get(guildConfig.mutedRoleID));
+                        var mutedRole = rGuild.roles.cache.get(guildConfig.mutedRoleID)
+                        if(rMember.roles.cache.has(mutedRole.id)){
+                            rMember.roles.remove(mutedRole);
                         }
                         row.destroy();
                     });
@@ -534,10 +535,49 @@ client.on("ready", async () =>{
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    /*commands.createCommand({
+    //Warn Command
+    commands.createCommand({
         name: "warn",
-        description: "Sends a formal warning to the user"
-    })*/
+        description: "Warns a Member.",
+        options: [
+            {
+                name: "user",
+                description: "Warn a user by User ID",
+                type: 1,
+                options: [
+                    {
+                        name: "UserID",
+                        description: "The User's Unique Snowflake ID",
+                        type: 3,
+                        required: true
+                    },
+                    {
+                        name: "Reason",
+                        description: "The reason for their warn",
+                        type: 3
+                    }
+                ]
+            },
+            {
+                name: "mention",
+                description: "Warn a user my mention",
+                type: 1,
+                options: [
+                    {
+                        name: "Mention",
+                        description: "The User's @Mention",
+                        type: 6,
+                        required: true
+                    },
+                    {
+                        name: "Reason",
+                        description: "The reason for their warn",
+                        type: 3
+                    }
+                ]
+            }
+        ]
+    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
 
     //Delete Command Template
     //commands.deleteCommand("commandID", "guildID") //Local Command
@@ -749,5 +789,5 @@ client.login(sysConfig.token);
 
 //Handle unhandled rejections
 process.on("unhandledRejection", err => {
-    console.error("Uncaught Promise Error: \n", err);
+    console.error(`An Unhandled Rejection occured. File: ${err.fileName}\nFull Error: ${err}`);
 });
