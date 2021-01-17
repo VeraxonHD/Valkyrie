@@ -156,7 +156,7 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
         defaultValue: {}
     }
 })
-const Warns = sequelize.define("Mutes", {
+const Warns = sequelize.define("Warns", {
     guildID: {
         type: DataTypes.STRING,
         allowNull: false
@@ -240,6 +240,7 @@ client.on("ready", async () =>{
     await GuildUsers.sync();
     await ReactionRoles.sync();
     await Mutes.sync();
+    await Warns.sync();
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });

@@ -11,6 +11,9 @@ exports.execute = (interaction) => {
 
     //Database Retrieval
     const Warns = main.getWarnsTable();
+    const Users = main.getUsersTable();
+    const GuildUsers = main.getGuildUsersTable();
+    const Configs = main.getConfigsTable();
 
     //Arguments
     var targetID;
@@ -29,10 +32,17 @@ exports.execute = (interaction) => {
             memberID: targetID,
             moderatorID: member.id,
             reason: reason
-        }).then( model => {
-            channel.send(`**${newMember.displayName}** has been warned. Reason: **${reason}**.`);
-            newMember.send(`You have been Warned in **${guild.name}**. Reason: **${reason}**.`);
-            return logs.logWarn(targetMember, reason, member);
+        }).then(() => {
+            const guildUserCompositeKey = guild.id + member.id;
+            channel.send(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);
+            targetMember.send(`You have been Warned in **${guild.name}**. Reason: **${reason}**.`);
+
+            Users.increment("globalMuteCount",{where:{userID: targetID}});
+            GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
+
+            Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
+                guild.channels.resolve(guildConfig.logChannelID).send(logs.logWarn(targetMember, reason, member));
+            })
         }).catch(err =>{
             console.log(err);
             return channel.send("Code 110 - Unknown Error with Database.");
