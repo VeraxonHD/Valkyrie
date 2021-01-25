@@ -4,6 +4,7 @@ exports.execute = (interaction) =>{
     const channel = interaction.channel;
     const member = interaction.member;
     const args = interaction.options || null;
+    const author = interaction.author;
 
     //Dependencies
     const main = require("../main.js");
@@ -12,6 +13,7 @@ exports.execute = (interaction) =>{
 
     //Database Retrieval
     const ReactionRoles = main.getReactionRolesTable();
+    const client = main.getClient();
 
     if(member.hasPermission("ADMINISTRATOR") == false){
         return channel.send("Code 102 - Invalid Permissions.");
