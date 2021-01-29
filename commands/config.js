@@ -32,6 +32,11 @@ exports.execute = (interaction) => {
                     console.log(e);
                 });
                 return channel.send(`Updated log channel to <#${value}> successfully.`);
+            }else if(conVar == "autorole"){
+                Configs.update({autoRoleID: value},{where: {guildID: guild.id}}).catch(e =>{
+                    channel.send("Code 110 - Unknown Error with Database.");
+                    console.log(e);
+                });
             }
         });
     }

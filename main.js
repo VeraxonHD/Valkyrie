@@ -44,6 +44,9 @@ const Configs = sequelize.define("Configs", {
     },
     logChannelID: {
         type: DataTypes.STRING
+    },
+    autoRoleID: {
+        type: DataTypes.STRING
     }
 });
 const Mutes = sequelize.define("Mutes", {
@@ -460,6 +463,19 @@ client.on("ready", async () =>{
                         name: "logchannel",
                         description: "#Channel Mentionable of the new Log Channel",
                         type: 7,
+                        required: true
+                    }
+                ]
+            }, 
+            {
+                name: "autorole",
+                description: "A role that will be automatically assigned to the user upon joining",
+                type: 1,
+                options: [
+                    {
+                        name: "role",
+                        description: "@Role Mentionable of the Role to automatically assign",
+                        type: 8,
                         required: true
                     }
                 ]
