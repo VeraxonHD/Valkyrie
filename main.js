@@ -212,12 +212,22 @@ client.setInterval(async () => {
                 rGuild.members.fetch(row.memberID).then(rMember =>{
                     Configs.findOne({where: {guildID: rGuild.id}}).then(guildConfig =>{
                         var mutedRole = rGuild.roles.cache.get(guildConfig.mutedRoleID)
+                        if(!mutedRole){
+                            console.log(`Muted Role ${guildConfig.mutedRoleID} in guild ${row.guildID} no longer exists. Deleting record in Mutes table.`);
+                            row.destroy();
+                        }
                         if(rMember.roles.cache.has(mutedRole.id)){
                             rMember.roles.remove(mutedRole);
                         }
                         row.destroy();
                     });
+                }).catch( err =>{
+                    console.log(`Member ${row.memberID} from Mutes table no longer exists. Deleting record.`);
+                    row.destroy();
                 });
+            }).catch( err =>{
+                console.log(`Guild ${row.guildID} from Mutes table no longer exists. Deleting record.`);
+                row.destroy();
             });
         });
     });
@@ -790,5 +800,5 @@ client.login(sysConfig.token);
 
 //Handle unhandled rejections
 process.on("unhandledRejection", err => {
-    console.error(`An Unhandled Rejection occured. File: ${err.fileName}\nFull Error: ${err}`);
+    console.error(err);
 });
