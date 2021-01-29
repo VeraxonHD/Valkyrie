@@ -811,6 +811,17 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
     })
 })
 
+client.on("guildMemberAdd", async (member) => {
+    const guild = member.guild;
+    Configs.findOne({where:{guildID: guild.id}}).then(row => {
+        if(!row.autoRoleID == null){
+            if(guild.roles.cache.get(row.autoRoleID)){
+                member.roles.add(row.autoRoleID);
+            }
+        }
+    })
+})
+
 //Client Log In
 client.login(sysConfig.token);
 
