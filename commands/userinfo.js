@@ -9,10 +9,12 @@ exports.execute = (interaction) => {
     const main = require("../main.js");
     const logs = require("../util/logFunctions.js");
     const Discord = require("discord.js");
+    const df = require("dateformat");
 
     //Database Retrieval
     const Users = main.getUsersTable();
     const GuildUsers = main.getGuildUsersTable();
+    const client = main.getClient();
 
     var targetID;
     if(args != null){
