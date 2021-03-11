@@ -37,8 +37,8 @@ exports.execute = (interaction) => {
             channel.send(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);
             targetMember.send(`You have been Warned in **${guild.name}**. Reason: **${reason}**.`);
 
-            Users.increment("globalMuteCount",{where:{userID: targetID}});
-            GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
+            Users.increment("globalWarnCount",{where:{userID: targetID}});
+            GuildUsers.increment("guildWarnCount",{where:{guildUserID: guildUserCompositeKey}});
 
             Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
                 guild.channels.resolve(guildConfig.logChannelID).send(logs.logWarn(targetMember, reason, member));
