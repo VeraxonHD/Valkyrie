@@ -257,7 +257,7 @@ client.on("ready", async () =>{
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
-
+    /*
     //PingPong Command
     commands.createCommand({
         name: "ping",
@@ -605,7 +605,7 @@ client.on("ready", async () =>{
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-
+    */
     //Delete Command Template
     //commands.deleteCommand("commandID", "guildID") //Local Command
     //commands.deleteCommand("commandID") //Global Command
