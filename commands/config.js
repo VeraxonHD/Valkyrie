@@ -37,6 +37,7 @@ exports.execute = (interaction) => {
                     channel.send("Code 110 - Unknown Error with Database.");
                     console.log(e);
                 });
+                return channel.send(`Updated auto role to <@&${value}> successfully.`);
             }
         });
     }
