@@ -15,6 +15,10 @@ exports.execute = (interaction) => {
     const GuildUsers = main.getGuildUsersTable();
     const Configs = main.getConfigsTable();
 
+    if(member.permissions.has("MANAGE_MESSAGES") == false){
+        return interaction.reply("Code 103 - Invalid Permissions.");
+    }
+
     //Arguments
     var targetID;
     var reason = "No Reason Supplied";

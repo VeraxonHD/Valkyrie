@@ -15,7 +15,7 @@ exports.execute = (interaction) =>{
     const ReactionRoles = main.getReactionRolesTable();
     const client = main.getClient();
 
-    if(member.hasPermission("ADMINISTRATOR") == false){
+    if(member.permissions.has("ADMINISTRATOR") == false){
         return interaction.reply("Code 102 - Invalid Permissions.");
     }
     if(args[0].name == "init"){

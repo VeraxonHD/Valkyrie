@@ -14,7 +14,7 @@ exports.execute = (interaction) => {
 
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
-    }else if(member.hasPermission("ADMINISTRATOR") == false){
+    }else if(member.permissions.has("ADMINISTRATOR") == false){
         return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
         args[0].options.forEach(arg => {

@@ -16,7 +16,7 @@ exports.execute = async (interaction) => {
 
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
-    }else if(member.hasPermission("BAN_MEMBERS") == false){
+    }else if(member.permissions.has("BAN_MEMBERS") == false){
         return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
         var targetID;
