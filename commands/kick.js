@@ -15,9 +15,9 @@ exports.execute = (interaction) => {
     const Configs = main.getConfigsTable();
     
     if(args == null){
-        return channel.send("Code 101 - No Arguments Supplied.");
+        return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.hasPermission("KICK_MEMBERS") == false){
-        return channel.send("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
         var targetID;
         var reason = "No Reason Specified";
@@ -32,7 +32,7 @@ exports.execute = (interaction) => {
         guild.members.fetch(targetID).then(targetMember =>{
             if(targetMember.kickable){
                 targetMember.kick(reason);
-                channel.send(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
+                interaction.reply(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
                 Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
                     guild.channels.resolve(guildConfig.logChannelID).send(logs.logKick(targetMember, reason, member));
                 }).then(()=>{
@@ -41,10 +41,10 @@ exports.execute = (interaction) => {
                     GuildUsers.increment("guildKickCount",{where:{guildUserID: guildUserCompositeKey}});
                 }).catch(e => {
                     console.log(e);
-                    return channel.send("Code 110 - Unknown Error with Database.");
+                    return interaction.reply("Code 110 - Unknown Error with Database.");
                 });
             }else{
-                return channel.send("Code 100 - Unknown Error Occurred.")
+                return interaction.reply("Code 100 - Unknown Error Occurred.")
             }
         }); 
     }

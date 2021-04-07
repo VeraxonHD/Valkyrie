@@ -13,31 +13,31 @@ exports.execute = (interaction) => {
     const Configs = main.getConfigsTable();
 
     if(args == null){
-        return channel.send("Code 101 - No Arguments Supplied.");
+        return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.hasPermission("ADMINISTRATOR") == false){
-        return channel.send("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
         args[0].options.forEach(arg => {
             var conVar = arg.name;
             var value = arg.value;
             if(conVar == "muterole"){
                 Configs.update({mutedRoleID: value},{where: {guildID: guild.id}}).catch(e => {
-                    channel.send("Code 110 - Unknown Error with Database.")
+                    interaction.reply("Code 110 - Unknown Error with Database.")
                     console.log(e);
                 });
-                return channel.send(`Updated muted role to <@&${value}> successfully.`);
+                return interaction.reply(`Updated muted role to <@&${value}> successfully.`);
             }else if(conVar == "logchannel"){
                 Configs.update({logChannelID: value},{where: {guildID: guild.id}}).catch(e => {
-                    channel.send("Code 110 - Unknown Error with Database.")
+                    interaction.reply("Code 110 - Unknown Error with Database.")
                     console.log(e);
                 });
-                return channel.send(`Updated log channel to <#${value}> successfully.`);
+                return interaction.reply(`Updated log channel to <#${value}> successfully.`);
             }else if(conVar == "autorole"){
                 Configs.update({autoRoleID: value},{where: {guildID: guild.id}}).catch(e =>{
-                    channel.send("Code 110 - Unknown Error with Database.");
+                    interaction.reply("Code 110 - Unknown Error with Database.");
                     console.log(e);
                 });
-                return channel.send(`Updated auto role to <@&${value}> successfully.`);
+                return interaction.reply(`Updated auto role to <@&${value}> successfully.`);
             }
         });
     }

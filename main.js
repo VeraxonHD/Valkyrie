@@ -12,12 +12,7 @@ const logs = require("./util/logFunctions.js");
 const package = require("./package.json");
 
 //Globals
-const client = new Discord.Client({partials: ["MESSAGE", "REACTION"]});
-    client.interactions = new interactions.Client(
-        sysConfig.token,
-        sysConfig.botID
-    );
-const commands = client.interactions;
+const client = new Discord.Client({partials: ["MESSAGE", "REACTION"], intents: ["GUILDS"]});
 const sequelize = new Sequelize({
     dialect: "sqlite",
     storage: "./store/database.db",
@@ -259,164 +254,163 @@ client.on("ready", async () =>{
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
     /*
     //PingPong Command
-    commands.createCommand({
+    client.application.commands.create({
         name: "ping",
         description: "Replies 'Pong!' and includes an average latency"
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Ban Command
-    commands.createCommand({
+    client.application.commands.create({
         name: "ban",
         description: "Bans a Member from the Discord.",
-        type: 4,
         options: [
             {
                 name: "user",
                 description: "Ban a user by User ID",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "UserID",
                         description: "The User's Unique Snowflake ID",
-                        type: 3,
+                        type: 'STRING',
                         required: true
                     },
                     {
                         name: "Reason",
                         description: "The reason for their ban",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             },
             {
                 name: "mention",
                 description: "Ban a user my mention",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "Mention",
                         description: "The User's @Mention",
-                        type: 6,
+                        type: 'USER',
                         required: true
                     },
                     {
                         name: "Reason",
                         description: "The reason for their ban",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Kick Command
-    commands.createCommand({
+    client.application.commands.create({
         name: "kick",
         description: "Kicks a Member from the Discord.",
         options: [
             {
                 name: "user",
                 description: "Kick a user by User ID",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "UserID",
                         description: "The User's Unique Snowflake ID",
-                        type: 3,
+                        type: 'STRING',
                         required: true
                     },
                     {
                         name: "Reason",
                         description: "The reason for their kick",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             },
             {
                 name: "mention",
                 description: "Kick a user my mention",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "Mention",
                         description: "The User's @Mention",
-                        type: 6,
+                        type: 'USER',
                         required: true
                     },
                     {
                         name: "Reason",
                         description: "The reason for their kick",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Mute Command
-    commands.createCommand({
+    client.application.commands.create({
         name: "mute",
         description: "Mute a user, applying a role that stops them from speaking.",
         options: [
             {
                 name: "user",
                 description: "Mute a user by User ID",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "UserID",
                         description: "The User's Unique Snowflake ID",
-                        type: 3,
+                        type: 'STRING',
                         required: true
                     },
                     {
                         name: "Duration",
                         description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
-                        type: 3
+                        type: 'STRING'
                     },
                     {
                         name: "Reason",
                         description: "The reason for their mute",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             },
             {
                 name: "mention",
                 description: "Mute a user my mention",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "Mention",
                         description: "The User's @Mention",
-                        type: 6,
+                        type: 'USER',
                         required: true
                     },
                     {
                         name: "Duration",
                         description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
-                        type: 3
+                        type: 'STRING'
                     },
                     {
                         name: "Reason",
                         description: "The reason for their mute",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Unmute Command    
-    commands.createCommand({
+    client.application.commands.create({
         name: "unmute",
         description: "Unmute a user.",
         options: [
             {
                 name: "user",
                 description: "Unmute a user by User ID",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "UserID",
                         description: "The User's Unique Snowflake ID",
-                        type: 3,
+                        type: 'STRING',
                         required: true
                     }
                 ]
@@ -424,12 +418,12 @@ client.on("ready", async () =>{
             {
                 name: "mention",
                 description: "Unmute a user my mention",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "Mention",
                         description: "The User's @Mention",
-                        type: 6,
+                        type: 'USER',
                         required: true
                     }
                 ]
@@ -437,19 +431,19 @@ client.on("ready", async () =>{
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Config Command
-    commands.createCommand({
+    client.application.commands.create({
         name: "config",
         description: "Enables admins to change certain values or behaviours.",
         options: [
             {
                 name: "muterole",
                 description: "The Role to apply to users when /mute-d.",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "muterole",
                         description: "@Role Mentionable of the Mute Role.",
-                        type: 8,
+                        type: 'ROLE',
                         required: true
                     }
                 ]
@@ -457,12 +451,12 @@ client.on("ready", async () =>{
             {
                 name: "logchannel",
                 description: "The channel to log bot interactions to.",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "logchannel",
                         description: "#Channel Mentionable of the new Log Channel",
-                        type: 7,
+                        type: 'CHANNEL',
                         required: true
                     }
                 ]
@@ -470,12 +464,12 @@ client.on("ready", async () =>{
             {
                 name: "autorole",
                 description: "A role that will be automatically assigned to the user upon joining",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "role",
                         description: "@Role Mentionable of the Role to automatically assign",
-                        type: 8,
+                        type: 'ROLE',
                         required: true
                     }
                 ]
@@ -483,66 +477,66 @@ client.on("ready", async () =>{
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //UserInfo Command
-    commands.createCommand({
+    client.application.commands.create({
         name: "userinfo",
         description: "View your own (or a target's) user information",
         options: [
             {
                 name: "mention",
                 description: "Optional target @member",
-                type: 6
+                type: 'USER'
             },
             {
                 name: "userid",
                 description: "User ID of the target",
-                type: 3
+                type: 'STRING'
             }
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //ReactRoles command
-    commands.createCommand({
+    client.application.commands.create({
         name: "reactrole",
         description: "Create, modify and delete reaction roles",
         options: [
             {
                 name: "init",
                 description: "Initialize a React Role 'Base' Message",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "channel",
                         description: "The channel to initialize the Base Message",
-                        type: 7,
+                        type: 'CHANNEL',
                         required: true,
                     },
                     {
                         name: "message",
                         description: "The text you want the Base Message to display",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             },
             {
                 name: "add",
                 description: "Add a reaction to an initialized Base Message.",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "messageID",
                         description: "The ID of the pre-initialized Base Message to add to",
-                        type: 3,
+                        type: 'STRING',
                         required: true,
                     },
                     {
                         name: "reactionEmoji",
                         description: "The emoji you wish to add",
-                        type: 3,
+                        type: 'STRING',
                         required: true
                     },
                     {
                         name: "role",
                         description: "The role you want to associate with this emoji",
-                        type: 8,
+                        type: 'ROLE',
                         required: true
                     }
                 ]
@@ -550,12 +544,12 @@ client.on("ready", async () =>{
             {
                 name: "delete",
                 description: "Delete a Base Message",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "messageID",
                         description: "The ID of the Base Message you want to delete",
-                        type: 3,
+                        type: 'STRING',
                         required: true
                     }
                 ]
@@ -563,43 +557,43 @@ client.on("ready", async () =>{
         ]
     }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
     //Warn Command
-    commands.createCommand({
+    client.application.commands.create({
         name: "warn",
         description: "Warns a Member.",
         options: [
             {
                 name: "user",
                 description: "Warn a user by User ID",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "UserID",
                         description: "The User's Unique Snowflake ID",
-                        type: 3,
+                        type: 'STRING',
                         required: true
                     },
                     {
                         name: "Reason",
                         description: "The reason for their warn",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             },
             {
                 name: "mention",
                 description: "Warn a user my mention",
-                type: 1,
+                type: 'SUB_COMMAND',
                 options: [
                     {
                         name: "Mention",
                         description: "The User's @Mention",
-                        type: 6,
+                        type: 'USER',
                         required: true
                     },
                     {
                         name: "Reason",
                         description: "The reason for their warn",
-                        type: 3
+                        type: 'STRING'
                     }
                 ]
             }
@@ -611,15 +605,14 @@ client.on("ready", async () =>{
     //commands.deleteCommand("commandID") //Global Command
 
     //List all Commands
-    common.listCommands(commands);
 });
 
 /**
  * 'interactionCreate' - Called when a user runs a slash-command.
  * @param interaction - The interaction object from the API
  */
-client.on("interactionCreate", (interaction) =>{
-    var cmdFile = require(`./commands/${interaction.name}.js`);
+client.on("interaction", (interaction) =>{
+    var cmdFile = require(`./commands/${interaction.commandName}.js`);
     if(!cmdFile){
         return;
     }else{

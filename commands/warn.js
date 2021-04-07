@@ -34,7 +34,7 @@ exports.execute = (interaction) => {
             reason: reason
         }).then(() => {
             const guildUserCompositeKey = guild.id + member.id;
-            channel.send(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);
+            interaction.reply(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);
             targetMember.send(`You have been Warned in **${guild.name}**. Reason: **${reason}**.`);
 
             Users.increment("globalWarnCount",{where:{userID: targetID}});
@@ -45,7 +45,7 @@ exports.execute = (interaction) => {
             })
         }).catch(err =>{
             console.log(err);
-            return channel.send("Code 110 - Unknown Error with Database.");
+            return interaction.reply("Code 110 - Unknown Error with Database.");
         });
     });
 }

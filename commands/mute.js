@@ -17,9 +17,9 @@ exports.execute = (interaction) => {
     const Mutes = main.getMutesTable();
 
     if(args == null){
-        return channel.send("Code 101 - No Arguments Supplied.");
+        return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.hasPermission("MANAGE_MESSAGES") == false){
-        return channel.send("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
         var targetID;
         var duration = -1;
@@ -38,17 +38,17 @@ exports.execute = (interaction) => {
         try{
             endsTimestamp = Date.now() + ms(duration);
         }catch{
-            return channel.send("Code 102 - Invalid Argument: 'duration'.\nMust follow (int)(scale)\nExample: ```'10s' - 10 seconds\n'30m' - 30 minutes\n'2h' - 2 Hours\nFull list of examples: https://github.com/vercel/ms#examples```")
+            return interaction.reply("Code 102 - Invalid Argument: 'duration'.\nMust follow (int)(scale)\nExample: ```'10s' - 10 seconds\n'30m' - 30 minutes\n'2h' - 2 Hours\nFull list of examples: https://github.com/vercel/ms#examples```")
         }
 
         Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
             var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
             if(!mutedRole){
-                return channel.send("Code 100 - Muted Role is invalid - database corruption?");
+                return interaction.reply("Code 100 - Muted Role is invalid - database corruption?");
             }
             guild.members.fetch(targetID).then(targetMember =>{
                 targetMember.roles.add(mutedRole).then(newMember =>{
-                    channel.send(`**${newMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
+                    interaction.reply(`**${newMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
                     newMember.send(`You have been Muted in **${guild.name}** for **${duration}**. Reason: **${reason}**.`);
                     Mutes.create({
                         guildID: guild.id,
@@ -60,21 +60,21 @@ exports.execute = (interaction) => {
                         Users.increment("globalMuteCount",{where:{userID: targetID}});
                         GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
                     }).catch(e => {
-                        channel.send("Code 110 - Unknown Error with Database.");
+                        interaction.reply("Code 110 - Unknown Error with Database.");
                         console.log(e);
                     });
                     guild.channels.resolve(guildConfig.logChannelID).send(logs.logMute(targetMember, duration, reason, member));
                 }).catch(e=>{
                     console.log(e);
-                    return channel.send("Code 100 - Failed to add Mute Role to User.");
+                    return interaction.reply("Code 100 - Failed to add Mute Role to User.");
                 });
             }).catch( e=>{
                 console.log(e);;
-                return channel.send("Code 104 - Invalid User or Member Argument.");
+                return interaction.reply("Code 104 - Invalid User or Member Argument.");
             });
         }).catch(e => {
             console.log(e);
-            return channel.send("Code 110 - Unknown Error with Database.");
+            return interaction.reply("Code 110 - Unknown Error with Database.");
         });
     }
 }

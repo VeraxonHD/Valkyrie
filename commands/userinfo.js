@@ -17,7 +17,7 @@ exports.execute = (interaction) => {
     const client = main.getClient();
 
     var targetID;
-    if(args != null){
+    if(args.length != 0){
         targetID = args[0].value;
     }else{
         targetID = member.id;
@@ -39,7 +39,7 @@ exports.execute = (interaction) => {
                     .setColor("#00C597")
                     .setFooter("userinfo.interactions.valkyrie")
                     .setTimestamp(new Date());
-            channel.send({embed})
+            interaction.reply({embed})
             })
         })
     })

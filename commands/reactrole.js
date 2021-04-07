@@ -16,7 +16,7 @@ exports.execute = (interaction) =>{
     const client = main.getClient();
 
     if(member.hasPermission("ADMINISTRATOR") == false){
-        return channel.send("Code 102 - Invalid Permissions.");
+        return interaction.reply("Code 102 - Invalid Permissions.");
     }
     if(args[0].name == "init"){
         //Argument Handling
@@ -34,7 +34,7 @@ exports.execute = (interaction) =>{
         const embed = new Discord.MessageEmbed()
                 .setAuthor(messageText)
                 .setColor("ORANGE");
-        rrChannel.send({embed}).then(message =>{
+        rrinteraction.reply({embed}).then(message =>{
             ReactionRoles.create({
                 guildID: guild.id,
                 channelID: channel.id,
@@ -43,11 +43,11 @@ exports.execute = (interaction) =>{
                 reactions: {}
             }).catch(e=>{
                 console.log(e);
-                return channel.send("Error 110 - Unknown Database Error")
+                return interaction.reply("Error 110 - Unknown Database Error")
             });
         }).catch(e=>{
             console.log(e);
-            return channel.send("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
+            return interaction.reply("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
         });
     }else if(args[0].name == "add"){
         var messageID;

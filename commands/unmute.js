@@ -14,9 +14,9 @@ exports.execute = (interaction) => {
     const Mutes = main.getMutesTable();
 
     if(args == null){
-        return channel.send("Code 101 - No Arguments Supplied.");
+        return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.hasPermission("MANAGE_MESSAGES") == false){
-        return channel.send("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
         var targetID;
         args[0].options.forEach(arg => {
@@ -28,27 +28,27 @@ exports.execute = (interaction) => {
         Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
             var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
             if(!mutedRole){
-                return channel.send("Code 100 - Muted Role is invalid - database corruption?");
+                return interaction.reply("Code 100 - Muted Role is invalid - database corruption?");
             }
             guild.members.fetch(targetID).then(targetMember =>{
                 targetMember.roles.remove(mutedRole).then(newMember =>{
                     Mutes.findOne({where: {memberID: targetID}}).then(row =>{
                         row.destroy();
                     }).catch(e => {
-                        channel.send("Code 110 - Unknown Error with Database.")
+                        interaction.reply("Code 110 - Unknown Error with Database.")
                         console.log(e);
                     });
                 }).catch(e =>{
                     console.log(e);
-                    return channel.send("Code 100 - Failed to add Mute Role to User.");
+                    return interaction.reply("Code 100 - Failed to add Mute Role to User.");
                 });
             }).catch(e =>{
                 console.log(e);
-                return channel.send("Code 104 - Invalid User or Member Argument.");
+                return interaction.reply("Code 104 - Invalid User or Member Argument.");
             });
         }).catch(e => {
             console.log(e);
-            return channel.send("Code 110 - Unknown Error with Database.")
+            return interaction.reply("Code 110 - Unknown Error with Database.")
         });
     }
 }
