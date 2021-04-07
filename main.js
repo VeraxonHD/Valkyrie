@@ -12,7 +12,7 @@ const logs = require("./util/logFunctions.js");
 const package = require("./package.json");
 
 //Globals
-const client = new Discord.Client({partials: ["MESSAGE", "REACTION"], intents: ["GUILDS"]});
+const client = new Discord.Client({partials: ["MESSAGE", "REACTION"], intents: ["GUILDS", "GUILD_PRESENCES"]});
 const sequelize = new Sequelize({
     dialect: "sqlite",
     storage: "./store/database.db",
