@@ -12,7 +12,7 @@ const logs = require("./util/logFunctions.js");
 const package = require("./package.json");
 
 //Globals
-const client = new Discord.Client({partials: ["MESSAGE", "REACTION"], intents: ["GUILDS", "GUILD_PRESENCES"]});
+const client = new Discord.Client({partials: ["MESSAGE", "REACTION"], intents: ["GUILDS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]});
 const sequelize = new Sequelize({
     dialect: "sqlite",
     storage: "./store/database.db",
@@ -761,6 +761,8 @@ client.on("message", async (message) =>{
 client.on("messageReactionAdd", async (messageReaction, user) => {
 
     if(user.id === client.user.id) return;
+
+    console.log("test1");
 
     if(messageReaction.message.partial) await messageReaction.message.fetch();
     var message = messageReaction.message;
