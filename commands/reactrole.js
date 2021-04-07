@@ -34,17 +34,18 @@ exports.execute = (interaction) =>{
         const embed = new Discord.MessageEmbed()
                 .setAuthor(messageText)
                 .setColor("ORANGE");
-        rrinteraction.reply({embed}).then(message =>{
+        rrChannel.send({embed}).then(message =>{
             ReactionRoles.create({
                 guildID: guild.id,
                 channelID: channel.id,
                 messageID: message.id,
-                creatorGUID: (guild.id + author.id),
+                creatorGUID: (guild.id + member.id),
                 reactions: {}
             }).catch(e=>{
                 console.log(e);
                 return interaction.reply("Error 110 - Unknown Database Error")
             });
+            interaction.reply("Initialized reaction role in channel successfully.");
         }).catch(e=>{
             console.log(e);
             return interaction.reply("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
@@ -82,6 +83,7 @@ exports.execute = (interaction) =>{
                                     "messageID": rrMessage.id
                                 }
                                 ReactionRoles.update({reactions: rrData}, {where: {messageID: rrMessage.id}});
+                                interaction.reply("Added a new reaction role to message successfully.");
                             })
                         }
                     }
@@ -99,6 +101,7 @@ exports.execute = (interaction) =>{
                 if(rrMessage){
                     rrMessage.delete().then(async m =>{
                         await ReactionRoles.destroy({where: {messageID: rrMessage.id}});
+                        interaction.reply("Reaction Role deleted successfully.");
                     })
                 }
             })
