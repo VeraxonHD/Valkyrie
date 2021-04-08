@@ -251,7 +251,7 @@ client.on("ready", async () =>{
     await Warns.sync();
 
     //Set Presence
-    client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'idle' });
+    client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
     /*
     //PingPong Command
     client.application.commands.create({
