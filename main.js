@@ -762,8 +762,6 @@ client.on("messageReactionAdd", async (messageReaction, user) => {
 
     if(user.id === client.user.id) return;
 
-    console.log("test1");
-
     if(messageReaction.message.partial) await messageReaction.message.fetch();
     var message = messageReaction.message;
     var emojiID = messageReaction.emoji.id;
