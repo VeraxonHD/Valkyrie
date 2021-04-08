@@ -34,8 +34,9 @@ exports.execute = (interaction) => {
                 targetMember.roles.remove(mutedRole).then(newMember =>{
                     Mutes.findOne({where: {memberID: targetID}}).then(row =>{
                         row.destroy();
+                        return interaction.reply(`Member <@${targetID}> was unmuted successfully.`);
                     }).catch(e => {
-                        interaction.reply("Code 110 - Unknown Error with Database.")
+                        interaction.reply("Code 104 - That member is not muted (Invalid User)");
                         console.log(e);
                     });
                 }).catch(e =>{
@@ -48,7 +49,7 @@ exports.execute = (interaction) => {
             });
         }).catch(e => {
             console.log(e);
-            return interaction.reply("Code 110 - Unknown Error with Database.")
+            return interaction.reply("Code 110 - Unknown Error with Database.");
         });
     }
 }
