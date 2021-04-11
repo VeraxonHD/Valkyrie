@@ -335,5 +335,143 @@
                 ]
             }
         ]
+    },
+    "tag": {
+        "name": "tag",
+        "description": "Allows the creation, modification or deletion of custom tags.",
+        "options": [
+            {
+                "name": "create",
+                "description": "Create a new tag.",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "name",
+                        "description": "Name for the tag.",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "response",
+                        "description": "Response that the tag will give when triggered. Use %AUTH, %CHAN, %GULD for replacements",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "modify",
+                "description": "The channel to log bot interactions to.",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "access",
+                        "description": "Add *either* a role or member to give or revoke access.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "tag",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "role",
+                                "description": "@Role of the role to enable/disable access.",
+                                "type": "ROLE"
+                            },
+                            {
+                                "name": "user",
+                                "description": "@Mention of the user to enable/disable access.",
+                                "type": "USER"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "response",
+                        "description": "Modify the response string to the tag.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "tag",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "text",
+                                "description": "The new response string.",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "name",
+                        "description": "Rename an already existing command.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "old-name",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "new-name",
+                                "description": "The new name for this tag",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "channels",
+                        "description": "The channels in which this command is allowed to be run.",
+                        "type": "SUB_COMMAND",
+                        "options":[
+                            {
+                                "name": "tag",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "channel",
+                                "description": "The channel to enable/disable usage in.",
+                                "type": "CHANNEL",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            }, 
+            {
+                "name": "delete",
+                "description": "Delete a tag",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "tag",
+                        "description": "Tag name to delete",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "info",
+                "description": "Show an embed with the settings for this command",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "tag",
+                        "description": "The tag to view. Must already exist.",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            }
+        ]
     }
 }
