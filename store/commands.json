@@ -1,0 +1,339 @@
+{
+    "ping": {
+        "name": "ping",
+        "description": "Replies Pong! and includes an average latency"
+    },
+    "ban": {
+        "name": "ban",
+        "description": "Bans a Member from the Discord.",
+        "options": [
+            {
+                "name": "user",
+                "description": "Ban a user by User ID",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "UserID",
+                        "description": "The Users Unique Snowflake ID",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their ban",
+                        "type": "STRING"
+                    }
+                ]
+            },
+            {
+                "name": "mention",
+                "description": "Ban a user my mention",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "Mention",
+                        "description": "The Users @Mention",
+                        "type": "USER",
+                        "required": true
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their ban",
+                        "type": "STRING"
+                    }
+                ]
+            }
+        ]
+    },
+    "kick": {
+        "name": "kick",
+        "description": "Kicks a Member from the Discord.",
+        "options": [
+            {
+                "name": "user",
+                "description": "Kick a user by User ID",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "UserID",
+                        "description": "The Users Unique Snowflake ID",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their kick",
+                        "type": "STRING"
+                    }
+                ]
+            },
+            {
+                "name": "mention",
+                "description": "Kick a user my mention",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "Mention",
+                        "description": "The Users @Mention",
+                        "type": "USER",
+                        "required": true
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their kick",
+                        "type": "STRING"
+                    }
+                ]
+            }
+        ]
+    },
+    "mute": {
+        "name": "mute",
+        "description": "Mute a user, applying a role that stops them from speaking.",
+        "options": [
+            {
+                "name": "user",
+                "description": "Mute a user by User ID",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "UserID",
+                        "description": "The Users Unique Snowflake ID",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "Duration",
+                        "description": "Mute Duration. Accepted Formats: 1h (1 Hour), 15m (15 Minutes), 1d (1 Day) etc.",
+                        "type": "STRING"
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their mute",
+                        "type": "STRING"
+                    }
+                ]
+            },
+            {
+                "name": "mention",
+                "description": "Mute a user my mention",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "Mention",
+                        "description": "The Users @Mention",
+                        "type": "USER",
+                        "required": true
+                    },
+                    {
+                        "name": "Duration",
+                        "description": "Mute Duration. Accepted Formats: 1h (1 Hour), 15m (15 Minutes), 1d (1 Day) etc.",
+                        "type": "STRING"
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their mute",
+                        "type": "STRING"
+                    }
+                ]
+            }
+        ]
+    },
+    "unmute": {
+        "name": "unmute",
+        "description": "Unmute a user.",
+        "options": [
+            {
+                "name": "user",
+                "description": "Unmute a user by User ID",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "UserID",
+                        "description": "The Users Unique Snowflake ID",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "mention",
+                "description": "Unmute a user my mention",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "Mention",
+                        "description": "The Users @Mention",
+                        "type": "USER",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    "config": {
+        "name": "config",
+        "description": "Enables admins to change certain values or behaviours.",
+        "options": [
+            {
+                "name": "muterole",
+                "description": "The Role to apply to users when /mute-d.",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "muterole",
+                        "description": "@Role Mentionable of the Mute Role.",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "logchannel",
+                "description": "The channel to log bot interactions to.",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "logchannel",
+                        "description": "#Channel Mentionable of the new Log Channel",
+                        "type": "CHANNEL",
+                        "required": true
+                    }
+                ]
+            }, 
+            {
+                "name": "autorole",
+                "description": "A role that will be automatically assigned to the user upon joining",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "role",
+                        "description": "@Role Mentionable of the Role to automatically assign",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    "userinfo": {
+        "name": "userinfo",
+        "description": "View your own (or a targets) user information",
+        "options": [
+            {
+                "name": "mention",
+                "description": "Optional target @member",
+                "type": "USER"
+            },
+            {
+                "name": "userid",
+                "description": "User ID of the target",
+                "type": "STRING"
+            }
+        ]
+    },
+    "reactrole": {
+        "name": "reactrole",
+        "description": "Create, modify and delete reaction roles",
+        "options": [
+            {
+                "name": "init",
+                "description": "Initialize a React Role Base Message",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "channel",
+                        "description": "The channel to initialize the Base Message",
+                        "type": "CHANNEL",
+                        "required": true
+                    },
+                    {
+                        "name": "message",
+                        "description": "The text you want the Base Message to display",
+                        "type": "STRING"
+                    }
+                ]
+            },
+            {
+                "name": "add",
+                "description": "Add a reaction to an initialized Base Message.",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageID",
+                        "description": "The ID of the pre-initialized Base Message to add to",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "reactionEmoji",
+                        "description": "The emoji you wish to add",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "role",
+                        "description": "The role you want to associate with this emoji",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "delete",
+                "description": "Delete a Base Message",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageID",
+                        "description": "The ID of the Base Message you want to delete",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    "warn": {
+        "name": "warn",
+        "description": "Warns a Member.",
+        "options": [
+            {
+                "name": "user",
+                "description": "Warn a user by User ID",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "UserID",
+                        "description": "The Users Unique Snowflake ID",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their warn",
+                        "type": "STRING"
+                    }
+                ]
+            },
+            {
+                "name": "mention",
+                "description": "Warn a user my mention",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "Mention",
+                        "description": "The Users @Mention",
+                        "type": "USER",
+                        "required": true
+                    },
+                    {
+                        "name": "Reason",
+                        "description": "The reason for their warn",
+                        "type": "STRING"
+                    }
+                ]
+            }
+        ]
+    }
+}
