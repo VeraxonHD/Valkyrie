@@ -10,6 +10,7 @@ const sysConfig = require("./store/config.json");
 const common = require("./util/commonFuncs.js");
 const logs = require("./util/logFunctions.js");
 const package = require("./package.json");
+const commands = require("./store/commands.json");
 
 //Globals
 const client = new Discord.Client({partials: ["MESSAGE", "REACTION"], intents: ["GUILDS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]});
@@ -170,32 +171,53 @@ const Warns = sequelize.define("Warns", {
         type: DataTypes.STRING
     }
 });
+const Tags = sequelize.define("Tags", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    creatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    response: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    access: {
+        type: DataTypes.JSON
+    },
+    uses: {
+        type: DataTypes.INTEGER
+    }
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
     return Configs;
 }
-
 exports.getMutesTable = () =>{
     return Mutes;
 }
-
 exports.getUsersTable = () =>{
     return Users;
 }
-
 exports.getGuildUsersTable = () =>{
     return GuildUsers;
 }
-
 exports.getReactionRolesTable = () =>{
     return ReactionRoles;
 }
-
 exports.getWarnsTable = () =>{
     return Warns;
 }
-
+exports.getTagsTable = () =>{
+    return Tags;
+}
 //Client Getter
 exports.getClient = () =>{
     return client;
@@ -249,362 +271,159 @@ client.on("ready", async () =>{
     await ReactionRoles.sync();
     await Mutes.sync();
     await Warns.sync();
+    await Tags.sync();
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
+    
+    //Register Global Commands
     /*
-    //PingPong Command
-    client.application.commands.create({
-        name: "ping",
-        description: "Replies 'Pong!' and includes an average latency"
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //Ban Command
-    client.application.commands.create({
-        name: "ban",
-        description: "Bans a Member from the Discord.",
-        options: [
+    for(var command in commands){
+        console.log(`Registering command ${commands[command].name}...`)
+        await client.application.commands.create(commands[command]).then(newCommand => {
+            console.log(`Registered new command ${commands[command].name} successfully.`)
+        }).catch(e => {console.error(e)});
+    }
+    */
+    var tagCommand = {
+        "name": "tag",
+        "description": "Allows the creation, modification or deletion of custom tags.",
+        "options": [
             {
-                name: "user",
-                description: "Ban a user by User ID",
-                type: 'SUB_COMMAND',
-                options: [
+                "name": "create",
+                "description": "Create a new tag.",
+                "type": "SUB_COMMAND",
+                "options": [
                     {
-                        name: "UserID",
-                        description: "The User's Unique Snowflake ID",
-                        type: 'STRING',
-                        required: true
+                        "name": "name",
+                        "description": "Name for the tag.",
+                        "type": "STRING",
+                        "required": true
                     },
                     {
-                        name: "Reason",
-                        description: "The reason for their ban",
-                        type: 'STRING'
+                        "name": "response",
+                        "description": "Response that the tag will give when triggered. Use %AUTH, %CHAN, %GULD for replacements",
+                        "type": "STRING",
+                        "required": true
                     }
                 ]
             },
             {
-                name: "mention",
-                description: "Ban a user my mention",
-                type: 'SUB_COMMAND',
-                options: [
+                "name": "modify",
+                "description": "The channel to log bot interactions to.",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
                     {
-                        name: "Mention",
-                        description: "The User's @Mention",
-                        type: 'USER',
-                        required: true
+                        "name": "access",
+                        "description": "Add *either* a role or member to give or revoke access.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "tag",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "role",
+                                "description": "@Role of the role to enable/disable access.",
+                                "type": "ROLE"
+                            },
+                            {
+                                "name": "user",
+                                "description": "@Mention of the user to enable/disable access.",
+                                "type": "USER"
+                            }
+                        ]
                     },
                     {
-                        name: "Reason",
-                        description: "The reason for their ban",
-                        type: 'STRING'
-                    }
-                ]
-            }
-        ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //Kick Command
-    client.application.commands.create({
-        name: "kick",
-        description: "Kicks a Member from the Discord.",
-        options: [
-            {
-                name: "user",
-                description: "Kick a user by User ID",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "UserID",
-                        description: "The User's Unique Snowflake ID",
-                        type: 'STRING',
-                        required: true
+                        "name": "response",
+                        "description": "Modify the response string to the tag.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "tag",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "text",
+                                "description": "The new response string.",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
                     },
                     {
-                        name: "Reason",
-                        description: "The reason for their kick",
-                        type: 'STRING'
-                    }
-                ]
-            },
-            {
-                name: "mention",
-                description: "Kick a user my mention",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "Mention",
-                        description: "The User's @Mention",
-                        type: 'USER',
-                        required: true
+                        "name": "name",
+                        "description": "Rename an already existing command.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "old-name",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "new-name",
+                                "description": "The new name for this tag",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
                     },
                     {
-                        name: "Reason",
-                        description: "The reason for their kick",
-                        type: 'STRING'
-                    }
-                ]
-            }
-        ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //Mute Command
-    client.application.commands.create({
-        name: "mute",
-        description: "Mute a user, applying a role that stops them from speaking.",
-        options: [
-            {
-                name: "user",
-                description: "Mute a user by User ID",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "UserID",
-                        description: "The User's Unique Snowflake ID",
-                        type: 'STRING',
-                        required: true
-                    },
-                    {
-                        name: "Duration",
-                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
-                        type: 'STRING'
-                    },
-                    {
-                        name: "Reason",
-                        description: "The reason for their mute",
-                        type: 'STRING'
-                    }
-                ]
-            },
-            {
-                name: "mention",
-                description: "Mute a user my mention",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "Mention",
-                        description: "The User's @Mention",
-                        type: 'USER',
-                        required: true
-                    },
-                    {
-                        name: "Duration",
-                        description: "Mute Duration. Accepted Formats: '1h' (1 Hour), '15m' (15 Minutes), '1d' (1 Day) etc.",
-                        type: 'STRING'
-                    },
-                    {
-                        name: "Reason",
-                        description: "The reason for their mute",
-                        type: 'STRING'
-                    }
-                ]
-            }
-        ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //Unmute Command    
-    client.application.commands.create({
-        name: "unmute",
-        description: "Unmute a user.",
-        options: [
-            {
-                name: "user",
-                description: "Unmute a user by User ID",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "UserID",
-                        description: "The User's Unique Snowflake ID",
-                        type: 'STRING',
-                        required: true
-                    }
-                ]
-            },
-            {
-                name: "mention",
-                description: "Unmute a user my mention",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "Mention",
-                        description: "The User's @Mention",
-                        type: 'USER',
-                        required: true
-                    }
-                ]
-            }
-        ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //Config Command
-    client.application.commands.create({
-        name: "config",
-        description: "Enables admins to change certain values or behaviours.",
-        options: [
-            {
-                name: "muterole",
-                description: "The Role to apply to users when /mute-d.",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "muterole",
-                        description: "@Role Mentionable of the Mute Role.",
-                        type: 'ROLE',
-                        required: true
-                    }
-                ]
-            },
-            {
-                name: "logchannel",
-                description: "The channel to log bot interactions to.",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "logchannel",
-                        description: "#Channel Mentionable of the new Log Channel",
-                        type: 'CHANNEL',
-                        required: true
+                        "name": "channels",
+                        "description": "The channels in which this command is allowed to be run.",
+                        "type": "SUB_COMMAND",
+                        "options":[
+                            {
+                                "name": "tag",
+                                "description": "The tag to update. Must already exist.",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "channel",
+                                "description": "The channel to enable/disable usage in.",
+                                "type": "CHANNEL",
+                                "required": true
+                            }
+                        ]
                     }
                 ]
             }, 
             {
-                name: "autorole",
-                description: "A role that will be automatically assigned to the user upon joining",
-                type: 'SUB_COMMAND',
-                options: [
+                "name": "delete",
+                "description": "Delete a tag",
+                "type": "SUB_COMMAND",
+                "options": [
                     {
-                        name: "role",
-                        description: "@Role Mentionable of the Role to automatically assign",
-                        type: 'ROLE',
-                        required: true
-                    }
-                ]
-            }
-        ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //UserInfo Command
-    client.application.commands.create({
-        name: "userinfo",
-        description: "View your own (or a target's) user information",
-        options: [
-            {
-                name: "mention",
-                description: "Optional target @member",
-                type: 'USER'
-            },
-            {
-                name: "userid",
-                description: "User ID of the target",
-                type: 'STRING'
-            }
-        ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //ReactRoles command
-    client.application.commands.create({
-        name: "reactrole",
-        description: "Create, modify and delete reaction roles",
-        options: [
-            {
-                name: "init",
-                description: "Initialize a React Role 'Base' Message",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "channel",
-                        description: "The channel to initialize the Base Message",
-                        type: 'CHANNEL',
-                        required: true,
-                    },
-                    {
-                        name: "message",
-                        description: "The text you want the Base Message to display",
-                        type: 'STRING'
+                        "name": "tag",
+                        "description": "Tag name to delete",
+                        "type": "STRING",
+                        "required": true
                     }
                 ]
             },
             {
-                name: "add",
-                description: "Add a reaction to an initialized Base Message.",
-                type: 'SUB_COMMAND',
-                options: [
+                "name": "info",
+                "description": "Show an embed with the settings for this command",
+                "type": "SUB_COMMAND",
+                "options": [
                     {
-                        name: "messageID",
-                        description: "The ID of the pre-initialized Base Message to add to",
-                        type: 'STRING',
-                        required: true,
-                    },
-                    {
-                        name: "reactionEmoji",
-                        description: "The emoji you wish to add",
-                        type: 'STRING',
-                        required: true
-                    },
-                    {
-                        name: "role",
-                        description: "The role you want to associate with this emoji",
-                        type: 'ROLE',
-                        required: true
-                    }
-                ]
-            },
-            {
-                name: "delete",
-                description: "Delete a Base Message",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "messageID",
-                        description: "The ID of the Base Message you want to delete",
-                        type: 'STRING',
-                        required: true
+                        "name": "tag",
+                        "description": "The tag to view. Must already exist.",
+                        "type": "STRING",
+                        "required": true
                     }
                 ]
             }
         ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    //Warn Command
-    client.application.commands.create({
-        name: "warn",
-        description: "Warns a Member.",
-        options: [
-            {
-                name: "user",
-                description: "Warn a user by User ID",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "UserID",
-                        description: "The User's Unique Snowflake ID",
-                        type: 'STRING',
-                        required: true
-                    },
-                    {
-                        name: "Reason",
-                        description: "The reason for their warn",
-                        type: 'STRING'
-                    }
-                ]
-            },
-            {
-                name: "mention",
-                description: "Warn a user my mention",
-                type: 'SUB_COMMAND',
-                options: [
-                    {
-                        name: "Mention",
-                        description: "The User's @Mention",
-                        type: 'USER',
-                        required: true
-                    },
-                    {
-                        name: "Reason",
-                        description: "The reason for their warn",
-                        type: 'STRING'
-                    }
-                ]
-            }
-        ]
-    }).then(newCommand => {console.log("Created Command"); common.printCommand(newCommand)});
-    */
-    //Delete Command Template
-    //commands.deleteCommand("commandID", "guildID") //Local Command
-    //commands.deleteCommand("commandID") //Global Command
-
-    //List all Commands
+    }
+    client.guilds.cache.get("409365548766461952").commands.create(tagCommand);
 });
 
 /**
@@ -753,6 +572,43 @@ client.on("message", async (message) =>{
                 GuildUsers.increment('guildMsgCount', {where: {guildUserID: guildUserCompositeKey}});
             }
         });
+        if(message.content.startsWith('$')){
+            var tagFromMsg = message.content.split('$')[1];
+            Tags.findOne({where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}}).then(tag =>{
+                if(tag){
+                    var channelAccess, roleAccess, memberAccess = false;
+
+                    if(tag.access.channels.includes(message.channel.id) || tag.access.channels.length == 0){
+                        channelAccess = true;
+                    }
+
+                    if(tag.access.roles.length == 0){
+                        roleAccess = true;
+                    }else{
+                        tag.access.roles.forEach(role =>{
+                            if(message.member.roles.cache.has(role)){
+                                roleAccess = true;
+                                return;
+                            }
+                        });
+                    }
+
+                    if(tag.access.members.includes(message.member.id) || tag.access.members.length == 0){
+                        memberAccess = true;
+                    }
+
+                    if(channelAccess && roleAccess && memberAccess){
+                        var response = tag.response;
+                        
+                        response = response.replace(/%AUTH/g, message.member.displayName);
+                        response = response.replace(/%CHAN/g, message.channel.name);
+                        response = response.replace(/%GULD/g, message.guild.name);
+
+                        message.channel.send(response);
+                    }
+                }
+            });
+        }
     }else{
         return;
     }
