@@ -463,7 +463,8 @@ client.on("message", async (message) =>{
                         response = response.replace(/%CHAN/g, message.channel.name);
                         response = response.replace(/%GULD/g, message.guild.name);
 
-                        message.channel.send(response);
+                        Tags.increment('uses', {where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}});
+                        return message.channel.send(response);
                     }
                 }
             });
