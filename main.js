@@ -195,6 +195,42 @@ const Tags = sequelize.define("Tags", {
         type: DataTypes.INTEGER
     }
 })
+const Lobbies = sequelize.define("Lobbies", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    lobbyID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    lobbySize: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    lobbyLocked: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false
+    },
+    creatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+});
+const LobbyHubs = sequelize.define("LobbyHubs", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    lobbyID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    creatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+});
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -217,6 +253,12 @@ exports.getWarnsTable = () =>{
 }
 exports.getTagsTable = () =>{
     return Tags;
+}
+exports.getLobbiesTable = () =>{
+    return Lobbies;
+}
+exports.getLobbyHubsTable = () =>{
+    return LobbyHubs;
 }
 //Client Getter
 exports.getClient = () =>{
@@ -272,17 +314,100 @@ client.on("ready", async () =>{
     await Mutes.sync();
     await Warns.sync();
     await Tags.sync();
+    await Lobbies.sync();
+    await LobbyHubs.sync();
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
+
+    var lobby = {
+        "name": "lobby",
+        "description": "Modify a user's lobby in this guild",
+        "options": [
+            {
+                "name": "modify",
+                "description": "Modify certain lobby settings",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "size",
+                        "description": "Modify the max size of your lobby",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "size",
+                                "description": "The new size of your lobby. Must be between 1 and 99 inclusive.",
+                                "type": "INTEGER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "locked",
+                        "description": "Lock or unlock your lobby",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "toggle",
+                                "description": "True to lock, False to unlock.",
+                                "type": "BOOLEAN",
+                                "required": true 
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+    var lobbyhub = {
+        "name": "lobbyhub",
+        "description": "Create a lobby hub channel to allow users to create their own channels when needed.",
+        "options": [
+            {
+                "name": "create",
+                "description": "Create a new lobby hub channel using an existing voice channel",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "channel",
+                        "description": "The channel you want to use as the hub channel",
+                        "type": "CHANNEL",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "delete",
+                "description": "Remove the lobby system from an existing hub channel. This will not delete the base voice channel.",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "channel",
+                        "description": "The hub channel you want to remove lobbies from",
+                        "type": "CHANNEL",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    }
     
     //Register Global Commands
-    for(var command in commands){
+    /*for(var command in commands){
         console.log(`Registering command ${commands[command].name}...`)
         await client.application.commands.create(commands[command]).then(newCommand => {
             console.log(`Registered new command ${commands[command].name} successfully.`)
         }).catch(e => {console.error(e)});
-    }
+    }*/
+
+    var testguild = client.guilds.cache.get("409365548766461952");
+    testguild.commands.create(lobby);
+    testguild.commands.create(lobbyhub);
+    testguild.commands.fetch().then(cmds =>{
+        cmds.forEach(ccmds =>{
+            console.log(`${ccmds.name}, ${ccmds.id}`);
+        });
+    });
 });
 
 /**
@@ -432,7 +557,7 @@ client.on("message", async (message) =>{
             }
         });
         if(message.content.startsWith('$')){
-            var tagFromMsg = message.content.split('$')[1];
+            var tagFromMsg = message.content.split('$')[1].split(' ')[0];
             Tags.findOne({where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}}).then(tag =>{
                 if(tag){
                     var channelAccess, roleAccess, memberAccess = false;
@@ -474,7 +599,12 @@ client.on("message", async (message) =>{
     }
 });
 
-client.on("messageReactionAdd", async (messageReaction, user) => {
+/**
+ * 'messageReactionAdd' - Called when a reaction is added to a message
+ * @param messageReaction - the reaction object
+ * @param user - the user that reacted
+ */
+ client.on("messageReactionAdd", async (messageReaction, user) => {
 
     if(user.id === client.user.id) return;
 
@@ -495,8 +625,13 @@ client.on("messageReactionAdd", async (messageReaction, user) => {
             console.log(e);
         }
     })
-})
+});
 
+/**
+ * 'messageReactionRemove' - Called when a reaction is removed from a message
+ * @param messageReaction - the reaction object
+ * @param user - the user that reacted
+ */
 client.on("messageReactionRemove", async (messageReaction, user) => {
 
     if(user.id === client.user.id) return;
@@ -518,8 +653,12 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
             console.log(e);
         }
     })
-})
+});
 
+/**
+ * 'guildMemberAdd' - Called when a member joins a guild.
+ * @param member - the member that joined's object
+ */
 client.on("guildMemberAdd", async (member) => {
     const guild = member.guild;
     Configs.findOne({where:{guildID: guild.id}}).then(row => {
@@ -529,7 +668,50 @@ client.on("guildMemberAdd", async (member) => {
             }
         }
     })
-})
+});
+
+client.on("voiceStateUpdate", async(oldState, newState) =>{
+    var member = newState.member;
+    var guild = newState.guild;
+    //If a member joins a channel for the first time
+    if(!oldState.channel && newState.channel){
+        LobbyHubs.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: newState.channel.id}]}}).then(lobbyhub =>{
+            if(lobbyhub){
+                var lobbyParentChannel = guild.channels.cache.get(lobbyhub.lobbyID).parent;
+                guild.channels.create(`${member.displayName}'s Lobby`, {
+                    type: "voice",
+                    parent: lobbyParentChannel
+                }).then(newLobby =>{
+                    Lobbies.create({
+                        guildID: guild.id,
+                        lobbyID: newLobby.id,
+                        lobbySize: null,
+                        lobbyLocked: false,
+                        creatorID: member.id
+                    }).catch(e =>{
+                        return console.error(e);
+                    })
+
+                    member.edit({
+                        channel: newLobby
+                    });
+                })
+            }else{
+                return;
+            }
+        })
+    }else if((oldState.channel && !newState.channel) || (oldState.channel != newState.channel)){
+        Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: oldState.channel.id}]}}).then(lobby =>{
+            if(lobby){
+                var lobbyChannel = guild.channels.cache.get(lobby.lobbyID);
+                if(lobbyChannel.members.size == 0){
+                    lobbyChannel.delete();
+                    lobby.destroy();
+                }
+            }
+        })
+    }
+});
 
 //Client Log In
 client.login(sysConfig.token);
