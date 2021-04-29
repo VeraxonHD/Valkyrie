@@ -604,13 +604,13 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
     var guild = newState.guild;
     //If a member joins a channel for the first time
     if(!oldState.channel && newState.channel){
-        LobbyHubs.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: newState.channel.id}]}}).then(lobbyhub =>{
+        LobbyHubs.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: newState.channel.id}]}}).then(async lobbyhub =>{
             if(lobbyhub){
                 var lobbyParentChannel = guild.channels.cache.get(lobbyhub.lobbyID).parent;
-                guild.channels.create(`${member.displayName}'s Lobby`, {
+                await guild.channels.create(`${member.displayName}'s Lobby`, {
                     type: "voice",
                     parent: lobbyParentChannel
-                }).then(newLobby =>{
+                }).then(async newLobby =>{
                     Lobbies.create({
                         guildID: guild.id,
                         lobbyID: newLobby.id,
