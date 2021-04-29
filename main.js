@@ -319,95 +319,24 @@ client.on("ready", async () =>{
 
     //Set Presence
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
-
-    var lobby = {
-        "name": "lobby",
-        "description": "Modify a user's lobby in this guild",
-        "options": [
-            {
-                "name": "modify",
-                "description": "Modify certain lobby settings",
-                "type": "SUB_COMMAND_GROUP",
-                "options": [
-                    {
-                        "name": "size",
-                        "description": "Modify the max size of your lobby",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "size",
-                                "description": "The new size of your lobby. Must be between 1 and 99 inclusive.",
-                                "type": "INTEGER",
-                                "required": true
-                            }
-                        ]
-                    },
-                    {
-                        "name": "locked",
-                        "description": "Lock or unlock your lobby",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "toggle",
-                                "description": "True to lock, False to unlock.",
-                                "type": "BOOLEAN",
-                                "required": true 
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-    }
-    var lobbyhub = {
-        "name": "lobbyhub",
-        "description": "Create a lobby hub channel to allow users to create their own channels when needed.",
-        "options": [
-            {
-                "name": "create",
-                "description": "Create a new lobby hub channel using an existing voice channel",
-                "type": "SUB_COMMAND",
-                "options": [
-                    {
-                        "name": "channel",
-                        "description": "The channel you want to use as the hub channel",
-                        "type": "CHANNEL",
-                        "required": true
-                    }
-                ]
-            },
-            {
-                "name": "delete",
-                "description": "Remove the lobby system from an existing hub channel. This will not delete the base voice channel.",
-                "type": "SUB_COMMAND",
-                "options": [
-                    {
-                        "name": "channel",
-                        "description": "The hub channel you want to remove lobbies from",
-                        "type": "CHANNEL",
-                        "required": true
-                    }
-                ]
-            }
-        ]
-    }
     
     //Register Global Commands
-    /*for(var command in commands){
+    for(var command in commands){
         console.log(`Registering command ${commands[command].name}...`)
         await client.application.commands.create(commands[command]).then(newCommand => {
             console.log(`Registered new command ${commands[command].name} successfully.`)
         }).catch(e => {console.error(e)});
-    }*/
+    }
 
-    var testguild = client.guilds.cache.get("409365548766461952");
-    testguild.commands.create(lobby);
-    testguild.commands.create(lobbyhub);
+    
+
+    /*var testguild = client.guilds.cache.get("409365548766461952");
     testguild.commands.fetch().then(cmds =>{
         cmds.forEach(ccmds =>{
             console.log(`${ccmds.name}, ${ccmds.id}`);
         });
-    });
+    });*/
+    
 });
 
 /**

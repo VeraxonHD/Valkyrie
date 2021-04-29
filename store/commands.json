@@ -473,5 +473,76 @@
                 ]
             }
         ]
+    },
+    "lobbyhub":{
+        "name": "lobbyhub",
+        "description": "Create a lobby hub channel to allow users to create their own channels when needed.",
+        "options": [
+            {
+                "name": "create",
+                "description": "Create a new lobby hub channel using an existing voice channel",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "channel",
+                        "description": "The channel you want to use as the hub channel",
+                        "type": "CHANNEL",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "delete",
+                "description": "Remove the lobby system from an existing hub channel. This will not delete the base voice channel.",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "channel",
+                        "description": "The hub channel you want to remove lobbies from",
+                        "type": "CHANNEL",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    "lobby": {
+        "name": "lobby",
+        "description": "Modify a user's lobby in this guild",
+        "options": [
+            {
+                "name": "modify",
+                "description": "Modify certain lobby settings",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "size",
+                        "description": "Modify the max size of your lobby",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "size",
+                                "description": "The new size of your lobby. Must be between 1 and 99 inclusive.",
+                                "type": "INTEGER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "locked",
+                        "description": "Lock or unlock your lobby",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "toggle",
+                                "description": "True to lock, False to unlock.",
+                                "type": "BOOLEAN",
+                                "required": true 
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }
