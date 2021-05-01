@@ -488,6 +488,12 @@
                         "description": "The channel you want to use as the hub channel",
                         "type": "CHANNEL",
                         "required": true
+                    },
+                    {
+                        "name": "parent",
+                        "description": "The parent (category) to spawn channels under",
+                        "type": "CHANNEL",
+                        "required": true
                     }
                 ]
             },

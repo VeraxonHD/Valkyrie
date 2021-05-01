@@ -23,6 +23,7 @@ exports.execute = async (interaction) => {
                 return interaction.reply("Code 103 - Invalid permissions.");
             }
             var lobbyChannel = subArgs[0].value;
+            var lobbyParent = subArgs[1].value;
             if(guild.channels.cache.get(lobbyChannel).type != "voice"){
                 return interaction.reply("That is not a voice channel. Lobby Hub channels must be of type VOICE_CHANNEL");
             }
@@ -31,8 +32,9 @@ exports.execute = async (interaction) => {
                     LobbyHubs.create({
                         guildID: guild.id,
                         lobbyID: lobbyChannel,
+                        lobbyHubParentID: lobbyParent,
                         creatorID: member.id
-                    }).then(newLobby =>{
+                    }).then(() =>{
                         return interaction.reply("New Lobby Hub Created");
                     }).catch(e => {
                         console.error(e);

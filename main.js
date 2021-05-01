@@ -1,6 +1,5 @@
 //Dependencies
 const Discord = require("discord.js");
-const interactions = require("discord-slash-commands-client");
 const { Sequelize, DataTypes, Op } = require("sequelize");
 const ms = require("ms");
 const df = require("dateformat");
@@ -13,7 +12,7 @@ const package = require("./package.json");
 const commands = require("./store/commands.json");
 
 //Globals
-const client = new Discord.Client({partials: ["MESSAGE", "REACTION"], intents: ["GUILDS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]});
+const client = new Discord.Client({partials: ["MESSAGE", "REACTION", "CHANNEL"], intents: ["GUILDS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]});
 const sequelize = new Sequelize({
     dialect: "sqlite",
     storage: "./store/database.db",
@@ -226,6 +225,10 @@ const LobbyHubs = sequelize.define("LobbyHubs", {
         type: DataTypes.STRING,
         allowNull: false
     },
+    lobbyHubParentID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
     creatorID: {
         type: DataTypes.STRING,
         allowNull: false
@@ -327,8 +330,6 @@ client.on("ready", async () =>{
             console.log(`Registered new command ${commands[command].name} successfully.`)
         }).catch(e => {console.error(e)});
     }
-
-    
 
     /*var testguild = client.guilds.cache.get("409365548766461952");
     testguild.commands.fetch().then(cmds =>{
@@ -604,12 +605,12 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
     var guild = newState.guild;
     //If a member joins a channel for the first time
     if(!oldState.channel && newState.channel){
-        LobbyHubs.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: newState.channel.id}]}}).then(async lobbyhub =>{
+        await LobbyHubs.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: newState.channel.id}]}}).then(async lobbyhub =>{
             if(lobbyhub){
-                var lobbyParentChannel = guild.channels.cache.get(lobbyhub.lobbyID).parent;
-                await guild.channels.create(`${member.displayName}'s Lobby`, {
+                var lobbyChannelParent = guild.channels.cache.get(lobbyhub.lobbyHubParentID);
+                guild.channels.create(`${member.displayName}'s Lobby`, {
                     type: "voice",
-                    parent: lobbyParentChannel
+                    parent: lobbyChannelParent
                 }).then(async newLobby =>{
                     Lobbies.create({
                         guildID: guild.id,
