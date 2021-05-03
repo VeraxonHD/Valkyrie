@@ -51,7 +51,6 @@ exports.execute = (interaction) =>{
             return interaction.reply("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
         });
     }else if(args[0].name == "add"){
-        console.log("add")
         var messageID;
         var reactionEmoji;
         var roleID;

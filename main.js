@@ -549,7 +549,6 @@ client.on("message", async (message) =>{
         try{
             message.guild.members.fetch(user.id).then(member =>{
                 member.roles.add(role);
-                console.log(`Added ${role.name} to ${member.user.tag}`);
             })
         }catch(e){
             console.log(e);
@@ -577,7 +576,6 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
         try{
             message.guild.members.fetch(user.id).then(member =>{
                 member.roles.remove(role);
-                console.log(`Removed ${role.name} from ${member.user.tag}`);
             })
         }catch(e){
             console.log(e);
