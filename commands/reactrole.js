@@ -30,15 +30,15 @@ exports.execute = (interaction) =>{
             }
         });
 
-        var rrChannel = guild.channels.resolve(channelID);
+        var rrChannel = guild.channels.cache.get(channelID);
         const embed = new Discord.MessageEmbed()
                 .setAuthor(messageText)
                 .setColor("ORANGE");
-        rrChannel.send({embed}).then(message =>{
+        rrChannel.send({embed}).then(rrMsg =>{
             ReactionRoles.create({
                 guildID: guild.id,
-                channelID: channel.id,
-                messageID: message.id,
+                channelID: rrMsg.channel.id,
+                messageID: rrMsg.id,
                 creatorGUID: (guild.id + member.id),
                 reactions: {}
             }).catch(e=>{
@@ -51,6 +51,7 @@ exports.execute = (interaction) =>{
             return interaction.reply("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
         });
     }else if(args[0].name == "add"){
+        console.log("add")
         var messageID;
         var reactionEmoji;
         var roleID;
@@ -67,7 +68,7 @@ exports.execute = (interaction) =>{
 
         ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
             var rrGuild = client.guilds.cache.get(row.guildID);
-            var rrChannel = rrGuild.channels.resolve(row.channelID);
+            var rrChannel = rrGuild.channels.cache.get(row.channelID);
             var rrData = row.reactions;
 
             rrChannel.messages.fetch(row.messageID).then(rrMessage =>{

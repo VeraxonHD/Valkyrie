@@ -324,12 +324,12 @@ client.on("ready", async () =>{
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
     
     //Register Global Commands
-    for(var command in commands){
+    /* for(var command in commands){
         console.log(`Registering command ${commands[command].name}...`)
         await client.application.commands.create(commands[command]).then(newCommand => {
             console.log(`Registered new command ${commands[command].name} successfully.`)
         }).catch(e => {console.error(e)});
-    }
+    } */
 
     /*var testguild = client.guilds.cache.get("409365548766461952");
     testguild.commands.fetch().then(cmds =>{
