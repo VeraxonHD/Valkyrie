@@ -133,7 +133,7 @@ exports.execute = async (interaction) => {
                         .setColor("#00C597")
                         .setTimestamp(new Date());
                     
-                    return interaction.reply({embed});
+                    return interaction.reply({embeds: [embed]});
                 }
             }).catch(e =>{
                 interaction.reply("Error 110 - An Error with the Database occured.");
