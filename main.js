@@ -330,6 +330,8 @@ client.on("ready", async () =>{
     client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
     
     //Register Global Commands
+    const cmds = await client.application.commands.set(commands);
+    console.log(cmds)
     /* for(var command in commands){
         console.log(`Registering command ${commands[command].name}...`)
         await client.application.commands.create(commands[command]).then(newCommand => {

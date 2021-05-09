@@ -1,9 +1,9 @@
-{
-    "ping": {
+[
+    {
         "name": "ping",
         "description": "Replies Pong! and includes an average latency"
     },
-    "ban": {
+    {
         "name": "ban",
         "description": "Bans a Member from the Discord.",
         "options": [
@@ -13,13 +13,13 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "UserID",
+                        "name": "userid",
                         "description": "The Users Unique Snowflake ID",
                         "type": "STRING",
                         "required": true
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their ban",
                         "type": "STRING"
                     }
@@ -31,13 +31,13 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "Mention",
+                        "name": "member",
                         "description": "The Users @Mention",
                         "type": "USER",
                         "required": true
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their ban",
                         "type": "STRING"
                     }
@@ -45,7 +45,7 @@
             }
         ]
     },
-    "kick": {
+    {
         "name": "kick",
         "description": "Kicks a Member from the Discord.",
         "options": [
@@ -55,13 +55,13 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "UserID",
+                        "name": "userid",
                         "description": "The Users Unique Snowflake ID",
                         "type": "STRING",
                         "required": true
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their kick",
                         "type": "STRING"
                     }
@@ -73,13 +73,13 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "Mention",
+                        "name": "member",
                         "description": "The Users @Mention",
                         "type": "USER",
                         "required": true
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their kick",
                         "type": "STRING"
                     }
@@ -87,7 +87,7 @@
             }
         ]
     },
-    "mute": {
+    {
         "name": "mute",
         "description": "Mute a user, applying a role that stops them from speaking.",
         "options": [
@@ -97,18 +97,18 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "UserID",
+                        "name": "user",
                         "description": "The Users Unique Snowflake ID",
                         "type": "STRING",
                         "required": true
                     },
                     {
-                        "name": "Duration",
+                        "name": "duration",
                         "description": "Mute Duration. Accepted Formats: 1h (1 Hour), 15m (15 Minutes), 1d (1 Day) etc.",
                         "type": "STRING"
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their mute",
                         "type": "STRING"
                     }
@@ -120,18 +120,18 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "Mention",
+                        "name": "member",
                         "description": "The Users @Mention",
                         "type": "USER",
                         "required": true
                     },
                     {
-                        "name": "Duration",
+                        "name": "duration",
                         "description": "Mute Duration. Accepted Formats: 1h (1 Hour), 15m (15 Minutes), 1d (1 Day) etc.",
                         "type": "STRING"
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their mute",
                         "type": "STRING"
                     }
@@ -139,7 +139,7 @@
             }
         ]
     },
-    "unmute": {
+    {
         "name": "unmute",
         "description": "Unmute a user.",
         "options": [
@@ -149,7 +149,7 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "UserID",
+                        "name": "userid",
                         "description": "The Users Unique Snowflake ID",
                         "type": "STRING",
                         "required": true
@@ -162,7 +162,7 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "Mention",
+                        "name": "member",
                         "description": "The Users @Mention",
                         "type": "USER",
                         "required": true
@@ -171,7 +171,7 @@
             }
         ]
     },
-    "config": {
+    {
         "name": "config",
         "description": "Enables admins to change certain values or behaviours.",
         "options": [
@@ -181,7 +181,7 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "muterole",
+                        "name": "role",
                         "description": "@Role Mentionable of the Mute Role.",
                         "type": "ROLE",
                         "required": true
@@ -194,7 +194,7 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "logchannel",
+                        "name": "channel",
                         "description": "#Channel Mentionable of the new Log Channel",
                         "type": "CHANNEL",
                         "required": true
@@ -227,7 +227,7 @@
             }
         ]
     },
-    "userinfo": {
+    {
         "name": "userinfo",
         "description": "View your own (or a targets) user information",
         "options": [
@@ -243,7 +243,7 @@
             }
         ]
     },
-    "reactrole": {
+    {
         "name": "reactrole",
         "description": "Create, modify and delete reaction roles",
         "options": [
@@ -271,13 +271,13 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "messageID",
+                        "name": "messageid",
                         "description": "The ID of the pre-initialized Base Message to add to",
                         "type": "STRING",
                         "required": true
                     },
                     {
-                        "name": "reactionEmoji",
+                        "name": "reactionemoji",
                         "description": "The emoji you wish to add",
                         "type": "STRING",
                         "required": true
@@ -296,7 +296,7 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "messageID",
+                        "name": "messageid",
                         "description": "The ID of the Base Message you want to delete",
                         "type": "STRING",
                         "required": true
@@ -305,7 +305,7 @@
             }
         ]
     },
-    "warn": {
+    {
         "name": "warn",
         "description": "Warns a Member.",
         "options": [
@@ -315,13 +315,13 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "UserID",
+                        "name": "userid",
                         "description": "The Users Unique Snowflake ID",
                         "type": "STRING",
                         "required": true
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their warn",
                         "type": "STRING"
                     }
@@ -333,13 +333,13 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "Mention",
+                        "name": "member",
                         "description": "The Users @Mention",
                         "type": "USER",
                         "required": true
                     },
                     {
-                        "name": "Reason",
+                        "name": "reason",
                         "description": "The reason for their warn",
                         "type": "STRING"
                     }
@@ -347,7 +347,7 @@
             }
         ]
     },
-    "tag": {
+    {
         "name": "tag",
         "description": "Allows the creation, modification or deletion of custom tags.",
         "options": [
@@ -485,7 +485,7 @@
             }
         ]
     },
-    "lobbyhub":{
+    {
         "name": "lobbyhub",
         "description": "Create a lobby hub channel to allow users to create their own channels when needed.",
         "options": [
@@ -523,7 +523,7 @@
             }
         ]
     },
-    "lobby": {
+    {
         "name": "lobby",
         "description": "Modify a user's lobby in this guild",
         "options": [
@@ -562,4 +562,4 @@
             }
         ]
     }
-}
+]
