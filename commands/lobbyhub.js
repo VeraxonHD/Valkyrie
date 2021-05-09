@@ -20,7 +20,7 @@ exports.execute = async (interaction) => {
         var subArgs = args[0].options;
         if(args[0].name == "create"){
             if(!member.permissions.has("MANAGE_MESSAGES")){
-                return interaction.reply("Code 103 - Invalid permissions.");
+                return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
             }
             var lobbyChannel = subArgs[0].value;
             var lobbyParent = subArgs[1].value;
@@ -38,7 +38,7 @@ exports.execute = async (interaction) => {
                         return interaction.reply("New Lobby Hub Created");
                     }).catch(e => {
                         console.error(e);
-                        return interaction.reply("Code 110 - Failed to create Lobby Hub in Databse");
+                        return interaction.reply("Code 110 - Failed to create Lobby Hub in Database");
                     })
                 }else{
                     return interaction.reply("That lobby hub channel has already been created.");

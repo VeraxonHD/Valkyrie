@@ -20,7 +20,7 @@ exports.execute = async (interaction) => {
         var subArgs = args[0].options;
         if(args[0].name == "create"){
             if(!member.permissions.has("MANAGE_MESSAGES")){
-                return interaction.reply("Code 103 - Invalid permissions.");
+                return interaction.reply("Code 103 - Invalid permissions. Missing permission MANAGE_MESSAGES");
             }
 
             var tagName = subArgs[0].value;
@@ -54,7 +54,7 @@ exports.execute = async (interaction) => {
             })
         }else if(args[0].name == "delete"){
             if(!member.permissions.has("MANAGE_MESSAGES")){
-                return interaction.reply("Code 103 - Invalid permissions.");
+                return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
             }
 
             var tagName = subArgs[0].value;
@@ -142,7 +142,7 @@ exports.execute = async (interaction) => {
         }
     }else if(args[0].name == "modify"){
         if(!member.permissions.has("MANAGE_MESSAGES")){
-            return interaction.reply("Code 103 - Invalid permissions.");
+            return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
         }
         var subArgs = args[0].options[0].options;
         var subCommand = args[0].options[0]

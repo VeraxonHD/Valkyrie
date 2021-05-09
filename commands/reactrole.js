@@ -16,7 +16,7 @@ exports.execute = (interaction) =>{
     const client = main.getClient();
 
     if(member.permissions.has("ADMINISTRATOR") == false){
-        return interaction.reply("Code 102 - Invalid Permissions.");
+        return interaction.reply("Code 102 - Invalid Permissions. You are missing permission ADMINISTRATOR");
     }
     if(args[0].name == "init"){
         //Argument Handling

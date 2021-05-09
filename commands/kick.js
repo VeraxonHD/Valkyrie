@@ -17,7 +17,7 @@ exports.execute = (interaction) => {
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.permissions.has("KICK_MEMBERS") == false){
-        return interaction.reply("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions. You are missing permission KICK_MEMBERS")
     }else{
         var targetID;
         var reason = "No Reason Specified";

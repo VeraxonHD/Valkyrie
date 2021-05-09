@@ -17,7 +17,7 @@ exports.execute = async (interaction) => {
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.permissions.has("BAN_MEMBERS") == false){
-        return interaction.reply("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions. You are missing permission BAN_MEMBERS")
     }else{
         var targetID;
         var reason = "No Reason Specified";
@@ -41,11 +41,11 @@ exports.execute = async (interaction) => {
                     GuildUsers.increment("guildBanCount",{where:{guildUserID: guildUserCompositeKey}});
                 }).catch(e => {
                     console.log(e);
-                    return interaction.reply("Code 110 - Unknown Error with Database.");
+                    return interaction.reply("Code 110 - Database Error - could not find a config record for this guild..");
                 });
                 
             }else{
-                return interaction.reply("Code 100 - Unknown Error Occurred.");
+                return interaction.reply("Code 104 - Unknown target member. They may have left the server or you may have an invalid mention. Try using \`/ban user\` instead.");
             }
         }); 
     }

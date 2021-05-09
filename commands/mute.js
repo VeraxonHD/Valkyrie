@@ -19,7 +19,7 @@ exports.execute = (interaction) => {
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.permissions.has("MANAGE_MESSAGES") == false){
-        return interaction.reply("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES")
     }else{
         var targetID;
         var duration = -1;

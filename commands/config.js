@@ -15,7 +15,7 @@ exports.execute = (interaction) => {
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
     }else if(member.permissions.has("ADMINISTRATOR") == false){
-        return interaction.reply("Code 103 - Invalid Permissions.")
+        return interaction.reply("Code 103 - Invalid Permissions. You are missing permission ADMINISTRATOR.")
     }else{
         var conVar = args[0].name;
         var value = args[0].options? args[0].options[0].value : null;
