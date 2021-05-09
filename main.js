@@ -12,7 +12,10 @@ const package = require("./package.json");
 const commands = require("./store/commands.json");
 
 //Globals
-const client = new Discord.Client({partials: ["MESSAGE", "REACTION", "CHANNEL"], intents: ["GUILDS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]});
+const client = new Discord.Client({
+    partials: ["MESSAGE", "REACTION", "CHANNEL"],
+    intents: ["GUILDS", "GUILD_MEMBERS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]
+});
 const sequelize = new Sequelize({
     dialect: "sqlite",
     storage: "./store/database.db",
@@ -42,7 +45,10 @@ const Configs = sequelize.define("Configs", {
     },
     autoRoleID: {
         type: DataTypes.STRING
-    }
+    },
+    welcomeMessage: {
+        type: DataTypes.STRING
+    },
 });
 const Mutes = sequelize.define("Mutes", {
     guildID: {
@@ -271,11 +277,11 @@ exports.getClient = () =>{
 //Automated/Frquent Functions
 client.setInterval(async () => {
     //Automated Umute Handling
-    Mutes.findAll({where: {endsAt: {[Op.and]: [{[Op.lte]: Date.now(), [Op.ne]: "-1"}]}}}).then(rows =>{
+    Mutes.findAll({where: {endsAt: {[Op.and]: [{[Op.lte]: Date.now(), [Op.ne]: "-1"}]}}}).then(async rows =>{
         rows.forEach(row => {
-            client.guilds.fetch(row.guildID).then(rGuild =>{
-                rGuild.members.fetch(row.memberID).then(rMember =>{
-                    Configs.findOne({where: {guildID: rGuild.id}}).then(guildConfig =>{
+            client.guilds.fetch(row.guildID).then(async rGuild =>{
+                rGuild.members.fetch(row.memberID).then(async rMember =>{
+                    Configs.findOne({where: {guildID: rGuild.id}}).then(async guildConfig =>{
                         var mutedRole = rGuild.roles.cache.get(guildConfig.mutedRoleID)
                         if(!mutedRole){
                             console.log(`Muted Role ${guildConfig.mutedRoleID} in guild ${row.guildID} no longer exists. Deleting record in Mutes table.`);
@@ -587,59 +593,106 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
  * 'guildMemberAdd' - Called when a member joins a guild.
  * @param member - the member that joined's object
  */
-client.on("guildMemberAdd", async (member) => {
+client.on("guildMemberAdd", member => {
     const guild = member.guild;
     Configs.findOne({where:{guildID: guild.id}}).then(row => {
-        if(!row.autoRoleID == null){
+        if(row.autoRoleID != null){
             if(guild.roles.cache.get(row.autoRoleID)){
                 member.roles.add(row.autoRoleID);
+            }
+        }
+        if(row.welcomeMessage != null){
+            const embed = new Discord.MessageEmbed()
+                .addField(`Welcome to ${guild.name}!`, row.welcomeMessage)
+                .setColor("GREEN");
+            try{
+                member.send({embed});
+            }catch(e){
+                console.log("Tried sending welcome message to the user, but it was not successful");
             }
         }
     })
 });
 
+/**
+ * voiceStateUpdate - Called when the voice state event is fired 
+ * @param oldState - the old state
+ * @param newState - the new state
+ */
 client.on("voiceStateUpdate", async(oldState, newState) =>{
-    var member = newState.member;
-    var guild = newState.guild;
-    //If a member joins a channel for the first time
-    if(!oldState.channel && newState.channel){
-        await LobbyHubs.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: newState.channel.id}]}}).then(async lobbyhub =>{
-            if(lobbyhub){
-                var lobbyChannelParent = guild.channels.cache.get(lobbyhub.lobbyHubParentID);
-                guild.channels.create(`${member.displayName}'s Lobby`, {
-                    type: "voice",
-                    parent: lobbyChannelParent
-                }).then(async newLobby =>{
-                    Lobbies.create({
-                        guildID: guild.id,
-                        lobbyID: newLobby.id,
-                        lobbySize: null,
-                        lobbyLocked: false,
-                        creatorID: member.id
-                    }).catch(e =>{
-                        return console.error(e);
-                    })
-
-                    member.edit({
-                        channel: newLobby
-                    });
-                })
-            }else{
-                return;
-            }
-        })
-    }else if((oldState.channel && !newState.channel) || (oldState.channel != newState.channel)){
-        Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: oldState.channel.id}]}}).then(lobby =>{
-            if(lobby){
-                var lobbyChannel = guild.channels.cache.get(lobby.lobbyID);
-                if(lobbyChannel.members.size == 0){
-                    lobbyChannel.delete();
-                    lobby.destroy();
-                }
-            }
-        })
+    if(!oldState.channel && newState.channel){ //If a member joins a channel for the first time
+        await checkHubThenCreate(newState);
+    }else if((oldState.channel != newState.channel) && (oldState.channel && newState.channel)){ //If a member changes channel
+        await checkHubThenCreate(newState);
+        await checkLobbyThenDelete(oldState);
+    }else if(!newState.channel){ //If a member disconnects from voice entirely
+        await checkLobbyThenDelete(oldState);
     }
 });
+
+/**========================
+ * SUPPLEMENTARY FUNCTIONS
+ =========================*/
+
+/**
+ * checkHubThenCreate - checks if the voice channel joined is a hub channel (and if the user already has a lobby made)
+ * According to this check, create a new lobby and move the user
+ * @param {*} newState 
+ */
+async function checkHubThenCreate(newState){
+    var member = newState.member;
+    var guild = newState.guild;
+    await LobbyHubs.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: newState.channel.id}]}}).then(async lobbyhub =>{
+        if(lobbyhub){
+            await Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{creatorID: member.id}]}}).then(async lobby =>{
+                if(lobby){
+                    var userLobby = guild.channels.cache.get(lobby.lobbyID);
+                    await member.edit({
+                        channel: userLobby
+                    });
+                }else{
+                    var lobbyChannelParent = guild.channels.cache.get(lobbyhub.lobbyHubParentID);
+                    guild.channels.create(`${member.displayName}'s Lobby`, {
+                        type: "voice",
+                        parent: lobbyChannelParent
+                    }).then(async newLobby =>{
+                        Lobbies.create({
+                            guildID: guild.id,
+                            lobbyID: newLobby.id,
+                            lobbySize: null,
+                            lobbyLocked: false,
+                            creatorID: member.id
+                        }).catch(e =>{
+                            return console.error(e);
+                        })
+
+                        member.edit({
+                            channel: newLobby
+                        });
+                    })
+                }
+            })
+        }else{
+            return;
+        }
+    })
+}
+/**
+ * checkLobbyThenDelete - deletes the lobby if it is empty
+ * @param {*} oldState 
+ */
+async function checkLobbyThenDelete(oldState){
+    var guild = oldState.guild;
+    Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: oldState.channel.id}]}}).then(lobby =>{
+        if(lobby){
+            var lobbyChannel = guild.channels.cache.get(lobby.lobbyID);
+            if(lobbyChannel.members.size == 0){
+                lobbyChannel.delete();
+                lobby.destroy();
+            }
+        }
+    })
+}
 
 //Client Log In
 client.login(sysConfig.token);

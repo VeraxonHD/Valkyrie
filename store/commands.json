@@ -209,8 +209,19 @@
                     {
                         "name": "role",
                         "description": "@Role Mentionable of the Role to automatically assign",
-                        "type": "ROLE",
-                        "required": true
+                        "type": "ROLE"
+                    }
+                ]
+            }, 
+            {
+                "name": "welcomemsg",
+                "description": "A message that will be automatically sent to the user upon joining",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "message",
+                        "description": "The message to send",
+                        "type": "STRING"
                     }
                 ]
             }

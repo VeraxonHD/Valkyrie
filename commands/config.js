@@ -17,28 +17,39 @@ exports.execute = (interaction) => {
     }else if(member.permissions.has("ADMINISTRATOR") == false){
         return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
-        args[0].options.forEach(arg => {
-            var conVar = arg.name;
-            var value = arg.value;
-            if(conVar == "muterole"){
-                Configs.update({mutedRoleID: value},{where: {guildID: guild.id}}).catch(e => {
-                    interaction.reply("Code 110 - Unknown Error with Database.")
-                    console.log(e);
-                });
-                return interaction.reply(`Updated muted role to <@&${value}> successfully.`);
-            }else if(conVar == "logchannel"){
-                Configs.update({logChannelID: value},{where: {guildID: guild.id}}).catch(e => {
-                    interaction.reply("Code 110 - Unknown Error with Database.")
-                    console.log(e);
-                });
-                return interaction.reply(`Updated log channel to <#${value}> successfully.`);
-            }else if(conVar == "autorole"){
-                Configs.update({autoRoleID: value},{where: {guildID: guild.id}}).catch(e =>{
-                    interaction.reply("Code 110 - Unknown Error with Database.");
-                    console.log(e);
-                });
-                return interaction.reply(`Updated auto role to <@&${value}> successfully.`);
-            }
-        });
+        var conVar = args[0].name;
+        var value = args[0].options[0].value;
+        if(conVar == "muterole"){
+            Configs.update({mutedRoleID: value},{where: {guildID: guild.id}}).then(() =>{
+                return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
+            }).catch(e => {
+                interaction.reply("Code 110 - Unknown Error with Database.")
+                return console.log(e);
+            });
+            return interaction.reply(`Updated muted role to <@&${value}> successfully.`);
+        }else if(conVar == "logchannel"){
+            Configs.update({logChannelID: value},{where: {guildID: guild.id}}).then(() =>{
+                return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
+            }).catch(e => {
+                interaction.reply("Code 110 - Unknown Error with Database.")
+                return console.log(e);
+            });
+            return interaction.reply(`Updated log channel to <#${value}> successfully.`);
+        }else if(conVar == "autorole"){
+            Configs.update({autoRoleID: value},{where: {guildID: guild.id}}).then(() =>{
+                return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
+            }).catch(e =>{
+                interaction.reply("Code 110 - Unknown Error with Database.");
+                return console.log(e);
+            });
+            return interaction.reply(`Updated auto role to <@&${value}> successfully.`);
+        }else if(conVar == "welcomemsg"){
+            Configs.update({welcomeMessage: value},{where: {guildID: guild.id}}).then(() =>{
+                return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
+            }).catch(e =>{
+                interaction.reply("Code 110 - Unknown Error with Database.");
+                return console.log(e);
+            });
+        }
     }
 }
