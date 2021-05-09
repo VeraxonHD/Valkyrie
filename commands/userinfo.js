@@ -18,7 +18,11 @@ exports.execute = (interaction) => {
 
     var targetID;
     if(args.length != 0){
-        targetID = args[0].value;
+        if(!member.permissions.has("MANAGE_MESSAGES")){
+            return interaction.reply("Error 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES")
+        }else{
+            targetID = args[0].value;
+        }
     }else{
         targetID = member.id;
     }
@@ -39,7 +43,7 @@ exports.execute = (interaction) => {
                     .setColor("#00C597")
                     .setFooter("userinfo.interactions.valkyrie")
                     .setTimestamp(new Date());
-            interaction.reply({embed})
+            interaction.reply({embeds: [embed]})
             })
         })
     })
