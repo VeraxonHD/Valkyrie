@@ -37,7 +37,7 @@ exports.execute = (interaction) => {
             moderatorID: member.id,
             reason: reason
         }).then(() => {
-            const guildUserCompositeKey = guild.id + member.id;
+            const guildUserCompositeKey = guild.id + targetMember.id;
             interaction.reply(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);
             targetMember.send(`You have been Warned in **${guild.name}**. Reason: **${reason}**.`);
 
