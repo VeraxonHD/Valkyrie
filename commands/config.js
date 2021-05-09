@@ -18,7 +18,7 @@ exports.execute = (interaction) => {
         return interaction.reply("Code 103 - Invalid Permissions.")
     }else{
         var conVar = args[0].name;
-        var value = args[0].options[0].value;
+        var value = args[0].options? args[0].options[0].value : null;
         if(conVar == "muterole"){
             Configs.update({mutedRoleID: value},{where: {guildID: guild.id}}).then(() =>{
                 return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
