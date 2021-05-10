@@ -733,7 +733,7 @@ client.on("guildMemberAdd", async (member) => {
         }
     })
 
-    const enabled = await common.getLogTypeState(guild.id, "messageedit");
+    const enabled = await common.getLogTypeState(guild.id, "usermigration");
     if(enabled){
         const logchannel = await common.getLogChannel(guild.id);
         if(logchannel){
@@ -756,7 +756,7 @@ client.on("guildMemberAdd", async (member) => {
 client.on("guildMemberRemove", async (member) => {
     const guild = member.guild;
     
-    const enabled = await common.getLogTypeState(guild.id, "messageedit");
+    const enabled = await common.getLogTypeState(guild.id, "usermigration");
     if(enabled){
         const logchannel = await common.getLogChannel(guild.id);
         if(logchannel){
