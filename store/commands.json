@@ -304,7 +304,7 @@
         "description": "View your own (or a targets) user information",
         "options": [
             {
-                "name": "mention",
+                "name": "member",
                 "description": "Optional target @member",
                 "type": "USER"
             },

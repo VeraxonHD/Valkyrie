@@ -20,7 +20,7 @@ exports.execute = (interaction) => {
     }else{
         var targetID;
         args[0].options.forEach(arg => {
-            if(arg.name == "member" || arg.name == "user"){
+            if(arg.name == "member" || arg.name == "userid"){
                 targetID = arg.value;
             }
         });
