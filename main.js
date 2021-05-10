@@ -793,7 +793,11 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
         if(!logchannel){
             return;
         }else{
-            const role = guild.roles.cache.get(oldMember.roles.cache.difference(newMember.roles.cache).first().id)
+            const diff = oldMember.roles.cache.difference(newMember.roles.cache).first();
+            if(!diff){
+                return;
+            }
+            const role = guild.roles.cache.get(diff.id)
             if(!role){
                 return;
             }
