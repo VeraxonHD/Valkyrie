@@ -794,6 +794,9 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
             return;
         }else{
             const role = guild.roles.cache.get(oldMember.roles.cache.difference(newMember.roles.cache).first().id)
+            if(!role){
+                return;
+            }
 
             const embed = new Discord.MessageEmbed()
                 .setAuthor(`${member.displayName}'s roles were updated`)
