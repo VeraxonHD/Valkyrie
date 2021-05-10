@@ -778,6 +778,9 @@ client.on("guildMemberRemove", async (member) => {
  * @param newMember - new member object
  */
 client.on("guildMemberUpdate", async (oldMember, newMember) =>{
+    if(oldMember.partial) await oldMember.fetch();
+    if(newMember.partial) await newMember.fetch();
+
     const guild = newMember.guild;
     const member = newMember;
 
@@ -790,7 +793,7 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
         if(!logchannel){
             return;
         }else{
-            const role = oldMember.roles.cache.difference(newMember.roles.cache).first();
+            const role = guild.roles.cache.get(oldMember.roles.cache.difference(newMember.roles.cache).first().id)
 
             const embed = new Discord.MessageEmbed()
                 .setAuthor(`${member.displayName}'s roles were updated`)
