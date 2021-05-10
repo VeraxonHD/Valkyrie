@@ -97,7 +97,7 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "user",
+                        "name": "userid",
                         "description": "The Users Unique Snowflake ID",
                         "type": "STRING",
                         "required": true
@@ -200,7 +200,79 @@
                         "required": true
                     }
                 ]
-            }, 
+            },
+            {
+                "name": "logs",
+                "description": "The channel to log bot interactions to.",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "usermigration",
+                        "description": "Logs user migration (joins/leaves)",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "enable",
+                                "description": "Whether or not to enable this log",
+                                "type": "BOOLEAN",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "messagedelete",
+                        "description": "Logs when messages are deleted",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "enable",
+                                "description": "Whether or not to enable this log",
+                                "type": "BOOLEAN",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "messageedit",
+                        "description": "Logs when messages are edited",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "enable",
+                                "description": "Whether or not to enable this log",
+                                "type": "BOOLEAN",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "voicestate",
+                        "description": "Logs when users move voice channels",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "enable",
+                                "description": "Whether or not to enable this log",
+                                "type": "BOOLEAN",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "rolechanges",
+                        "description": "Logs when users change their roles",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "enable",
+                                "description": "Whether or not to enable this log",
+                                "type": "BOOLEAN",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            },
             {
                 "name": "autorole",
                 "description": "A role that will be automatically assigned to the user upon joining",
@@ -392,7 +464,7 @@
                                 "type": "ROLE"
                             },
                             {
-                                "name": "user",
+                                "name": "userid",
                                 "description": "@Mention of the user to enable/disable access.",
                                 "type": "USER"
                             }
