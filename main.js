@@ -43,6 +43,10 @@ const Configs = sequelize.define("Configs", {
     logChannelID: {
         type: DataTypes.STRING
     },
+    logTypes: {
+        type: DataTypes.JSON,
+        defaultValue: {}
+    },
     autoRoleID: {
         type: DataTypes.STRING
     },
@@ -332,7 +336,7 @@ client.on("ready", async () =>{
     
     //Register Global Commands
     const cmds = await client.application.commands.set(commands);
-    console.log(cmds)
+    //console.log(cmds)
     /* for(var command in commands){
         console.log(`Registering command ${commands[command].name}...`)
         await client.application.commands.create(commands[command]).then(newCommand => {
@@ -376,7 +380,14 @@ client.on("guildCreate", async (guild) =>{
 
     Configs.create({
         guildID: guild.id,
-        ownerID: guild.ownerID
+        ownerID: guild.ownerID,
+        logTypes: {
+            usermigration: true,
+            messagedelete: true,
+            messageedit: true,
+            voicestate: true,
+            rolechanges: true
+        }
     }).then( () =>{
         console.log(`Joined Guild ${guild.name} (${guild.id}) successfully.`);
         client.guilds.fetch("409365548766461952").then(devGuild => {
@@ -606,45 +617,45 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
  * @param message - The message object
  */
 client.on("messageDelete", async (message) =>{
-    if(message.partial) await message.fetch();
+    if(message.partial){
+        return;
+    }
 
     const guild = message.guild;
     const member = message.member;
-    
-    Configs.findOne({where: {guildID: guild.id}}).then(config => {
-        if(!config){
-            return;
-        }else{
-            const logchannel = guild.channels.resolve(config.logChannelID)
-            if(!logchannel){
-                return;
-            }else{
-                const attachments = [];
 
-                if(message.attachments.size != 0){
-                    message.attachments.each(attachment => {
-                        attachments.push(attachment.proxyURL)
-                    })
-                }
+    const enabled = await common.getLogTypeState(guild.id, "messagedelete");
+    if(enabled == false){
+        return;
+    }
 
-                const embed = new Discord.MessageEmbed()
-                    .setAuthor(`${member.displayName}'s message was deleted`)
-                    .addField("Message Data", `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
-                    .setColor("RED")
-                    .setFooter("messagedelete.logs.valkyrie")
-                    .setTimestamp(new Date());
-
-                    if(message.content){
-                        embed.addField("Message Content", message.content)
-                    }
-                    if(attachments.length != 0){
-                        embed.addField("Message Attachment URLs", attachments)
-                    }
-                    
-                return logchannel.send({embed});
-            }
+    const logchannel = await common.getLogChannel(guild.id);
+    if(!logchannel){
+        return;
+    }else{
+        const attachments = [];
+        if(message.attachments.size != 0){
+            message.attachments.each(attachment => {
+                attachments.push(attachment.proxyURL)
+            })
         }
-    })
+    
+        const embed = new Discord.MessageEmbed()
+            .setAuthor(`${member.displayName}'s message was deleted`)
+            .addField("Message Data", `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
+            .setColor("RED")
+            .setFooter("messagedelete.logs.valkyrie")
+            .setTimestamp(new Date());
+    
+            if(message.content){
+                embed.addField("Message Content", message.content)
+            }
+            if(attachments.length != 0){
+                embed.addField("Message Attachment URLs", attachments)
+            }
+            
+        return logchannel.send({embed});
+    }
 });
 
 /**
@@ -660,41 +671,39 @@ client.on("messageUpdate", async (oldMessage, newMessage) =>{
     const member = newMessage.member;
 
     if((newMessage) && (newMessage.content != oldMessage.content)){
-        Configs.findOne({where: {guildID: guild.id}}).then(config => {
-            if(!config){
-                return;
-            }else{
-                const logchannel = guild.channels.resolve(config.logChannelID)
-                if(!logchannel){
-                    return;
-                }else{
-                    const oldContent = oldMessage.content ? oldMessage.content : "Old Message Content was Empty";
-                    const newContent = newMessage.content ? newMessage.content : "New Message Content is Empty";
-                    const attachments = [];
-    
-                    if(oldMessage.attachments.size != 0){
-                        oldMessage.attachments.each(attachment => {
-                            attachments.push(attachment.proxyURL)
-                        })
-                    }
-    
-                    const embed = new Discord.MessageEmbed()
-                        .setAuthor(`${member.displayName}'s message was edited`)
-                        .addField("Message Data", `**Date/Time**: ${df(oldMessage.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
-                        .addField("Old Message Content", oldContent)
-                        .addField("New Message Content", newContent)
-                        .setColor("ORANGE")
-                        .setFooter("messageupdate.logs.valkyrie")
-                        .setTimestamp(new Date());
-    
-                        if(attachments.length != 0){
-                            embed.addField("Message Attachment URLs", attachments)
-                        }
-                        
-                    return logchannel.send({embed});
-                }
+        const enabled = await common.getLogTypeState(guild.id, "messageedit");
+        if(enabled == false){
+            return;
+        }
+        const logchannel = await common.getLogChannel(guild.id);
+        if(!logchannel){
+            return;
+        }else{
+            const oldContent = oldMessage.content ? oldMessage.content : "Old Message Content was Empty";
+            const newContent = newMessage.content ? newMessage.content : "New Message Content is Empty";
+            const attachments = [];
+
+            if(oldMessage.attachments.size != 0){
+                oldMessage.attachments.each(attachment => {
+                    attachments.push(attachment.proxyURL)
+                })
             }
-        })
+
+            const embed = new Discord.MessageEmbed()
+                .setAuthor(`${member.displayName}'s message was edited`)
+                .addField("Message Data", `**Date/Time**: ${df(oldMessage.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
+                .addField("Old Message Content", oldContent)
+                .addField("New Message Content", newContent)
+                .setColor("ORANGE")
+                .setFooter("messageupdate.logs.valkyrie")
+                .setTimestamp(new Date());
+
+                if(attachments.length != 0){
+                    embed.addField("Message Attachment URLs", attachments)
+                }
+                
+            return logchannel.send({embed});
+        }
     }else{
         return;
     }
@@ -704,7 +713,7 @@ client.on("messageUpdate", async (oldMessage, newMessage) =>{
  * 'guildMemberAdd' - Called when a member joins a guild.
  * @param member - the member that joined's object
  */
-client.on("guildMemberAdd", member => {
+client.on("guildMemberAdd", async (member) => {
     const guild = member.guild;
     Configs.findOne({where:{guildID: guild.id}}).then(row => {
         if(row.autoRoleID != null){
@@ -723,7 +732,45 @@ client.on("guildMemberAdd", member => {
             }
         }
     })
+
+    const enabled = await common.getLogTypeState(guild.id, "messageedit");
+    if(enabled){
+        const logchannel = await common.getLogChannel(guild.id);
+        if(logchannel){
+            const embed = new Discord.MessageEmbed()
+                .setAuthor(`${member.user.tag} joined the server`)
+                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.user.tag} (${member.id})\n`)
+                .setThumbnail(member.user.avatarURL())
+                .setColor("DARK_GREEN")
+                .setFooter("guildmemberadd.logs.valkyrie")
+                .setTimestamp(new Date());
+            logchannel.send({embed});
+        }
+    }
 });
+
+/**
+ * 'guildMemberRemove' - Called when a member leaves a guild.
+ * @param member - the member that left's object
+ */
+client.on("guildMemberRemove", async (member) => {
+    const guild = member.guild;
+    
+    const enabled = await common.getLogTypeState(guild.id, "messageedit");
+    if(enabled){
+        const logchannel = await common.getLogChannel(guild.id);
+        if(logchannel){
+            const embed = new Discord.MessageEmbed()
+                .setAuthor(`${member.user.tag} left the server`)
+                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.user.tag} (${member.id})\n`)
+                .setThumbnail(member.user.avatarURL())
+                .setColor("DARK_RED")
+                .setFooter("guildmemberremove.logs.valkyrie")
+                .setTimestamp(new Date());
+            logchannel.send({embed});
+        }
+    }
+})
 
 /**
  * 'guildMemberUpdate' - called when a member updates
@@ -733,36 +780,33 @@ client.on("guildMemberAdd", member => {
 client.on("guildMemberUpdate", async (oldMember, newMember) =>{
     const guild = newMember.guild;
     const member = newMember;
-    var logchannel;
-    await Configs.findOne({where: {guildID: guild.id}}).then(config => {
-        if(!config){
+
+    if((oldMember && newMember) && (oldMember.roles != newMember.roles)){
+        const enabled = await common.getLogTypeState(guild.id, "messageedit");
+        if(enabled == false){
+            return;
+        }
+        const logchannel = await common.getLogChannel(guild.id);
+        if(!logchannel){
             return;
         }else{
-            logchannel = guild.channels.resolve(config.logChannelID)
-            if(!logchannel){
-                return;
+            const role = oldMember.roles.cache.difference(newMember.roles.cache).first();
+
+            const embed = new Discord.MessageEmbed()
+                .setAuthor(`${member.displayName}'s roles were updated`)
+                .addField("Update Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
+                .setColor("LUMINOUS_VIVID_PINK")
+                .setFooter("roles.guildmemberupdate.logs.valkyrie")
+                .setTimestamp(new Date());
+    
+            if(oldMember.roles.cache.has(role.id) && !newMember.roles.cache.has(role.id)){
+                embed.addField("Role Removed", role)
+            }else if(!oldMember.roles.cache.has(role.id) && newMember.roles.cache.has(role.id)){
+                embed.addField("Role Added", role)
             }
+    
+            logchannel.send({embed});
         }
-    });
-
-    if(oldMember.roles != newMember.roles){
-        const role = oldMember.roles.cache.difference(newMember.roles.cache).first();
-
-        const embed = new Discord.MessageEmbed()
-            .setAuthor(`${member.displayName}'s roles were updated`)
-            .addField("Update Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
-            .setColor("LUMINOUS_VIVID_PINK")
-            .setFooter("roles.guildmemberupdate.logs.valkyrie")
-            .setTimestamp(new Date());
-
-        if(oldMember.roles.cache.has(role.id) && !newMember.roles.cache.has(role.id)){
-            embed.addField("Role Removed", role)
-        }else if(!oldMember.roles.cache.has(role.id) && newMember.roles.cache.has(role.id)){
-            embed.addField("Role Added", role)
-        }
-
-        logchannel.send({embed});
-        
     }
 })
 
@@ -777,40 +821,37 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
     const guild = newState.guild;
     const member = newState.member;
 
-    var logchannel;
-    const embed = new Discord.MessageEmbed()
-        .setAuthor(`${member.displayName}'s voice state was updated`)
-        .addField("Voice State Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
-        .setColor("AQUA")
-        .setFooter("voicestateupdate.logs.valkyrie")
-        .setTimestamp(new Date());
-        
-    await Configs.findOne({where: {guildID: guild.id}}).then(config => {
-        if(!config){
-            return;
-        }else{
-            logchannel = guild.channels.resolve(config.logChannelID)
-            if(!logchannel){
-                return;
-            }
-        }
-    });
+    const enabled = await common.getLogTypeState(guild.id, "messageedit");
+    if(enabled == true){
+        const logchannel = await common.getLogChannel(guild.id);
+        if(logchannel){
+            const embed = new Discord.MessageEmbed()
+                .setAuthor(`${member.displayName}'s voice state was updated`)
+                .addField("Voice State Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
+                .setColor("AQUA")
+                .setFooter("voicestateupdate.logs.valkyrie")
+                .setTimestamp(new Date());
 
-    
+            if(!oldState.channel && newState.channel){ //If a member joins a channel for the first time
+                embed.addField("Member Joined Channel", `**${newState.channel.name}**`)
+            }else if((oldState.channel != newState.channel) && (oldState.channel && newState.channel)){ //If a member changes channel
+                embed.addField("Member Moved Channel", `From **${oldState.channel.name}** to **${newState.channel.name}**`)
+            }else if(!newState.channel){ //If a member disconnects from voice entirely
+                embed.addField("Member Left Channel", `**${oldState.channel.name}**`)
+            }
+            logchannel.send({embed});
+        }
+    }
 
     if(!oldState.channel && newState.channel){ //If a member joins a channel for the first time
-        embed.addField("Member Joined Channel", `**${newState.channel.name}**`)
         await checkHubThenCreate(newState);
     }else if((oldState.channel != newState.channel) && (oldState.channel && newState.channel)){ //If a member changes channel
-        embed.addField("Member Moved Channel", `From **${oldState.channel.name}** to **${newState.channel.name}**`)
         await checkHubThenCreate(newState);
         await checkLobbyThenDelete(oldState);
     }else if(!newState.channel){ //If a member disconnects from voice entirely
-        embed.addField("Member Left Channel", `**${oldState.channel.name}**`)
         await checkLobbyThenDelete(oldState);
     }
-
-    return logchannel.send({embed});
+    
 });
 
 /**========================
