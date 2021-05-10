@@ -731,6 +731,8 @@ client.on("guildMemberAdd", member => {
  * @param newState - the new state
  */
 client.on("voiceStateUpdate", async(oldState, newState) =>{
+    if(oldState.channel == newState.channel) return;
+
     const guild = newState.guild;
     const member = newState.member;
 
@@ -752,6 +754,8 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
             }
         }
     });
+
+    
 
     if(!oldState.channel && newState.channel){ //If a member joins a channel for the first time
         embed.addField("Member Joined Channel", `**${newState.channel.name}**`)
