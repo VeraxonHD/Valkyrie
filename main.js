@@ -392,11 +392,15 @@ client.on("guildCreate", async (guild) =>{
             guild.roles.create({
                 data: {
                     name: "Muted",
-                    color: "RED"
-                },
-                reason: "Automatically created a Muted Role. If you have one already, please edit the config file to point to that role. Else, feel free to edit this role however you please."
+                    color: "RED",
+                    reason: "Automatically created a Muted Role. If you have one already, please use /config to point to that role. Else, feel free to edit this role however you please."
+                }
             }).then(newMutedRole => {
-                Configs.update({mutedRoleID: newMutedRole.id}, {where:{guildID: guild.id}})
+                Configs.update({mutedRoleID: newMutedRole.id}, {where:{guildID: guild.id}}).then(() => {
+                    embed.addField("I automatically created a muted role", "Feel free to edit this role however you want!");
+                }).catch(e => {
+                    console.log(e);
+                })
             })
         }catch(e){
             mutedRoleExists = false;
@@ -404,20 +408,27 @@ client.on("guildCreate", async (guild) =>{
             //return channel.send("Code 120 - Bot has insufficient Permissions to Create a Role.");
         }
     }else{
-        Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}}).catch(e => {
+        Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}}).then(() => {
+            embed.addField("I found an existing mute role", "You already had a role called 'Muted', so I set that as the role to apply when a member is muted.\nYou can edit this at any time with the command \`/config mutedrole\`");
+        }).catch(e => {
             console.log(e);
             //return channel.send("Code 110 - Unknown Error with Database.");
         })
     }
 
-    var logChannel = guild.channels.cache.find(c => c.name.toLowerCase === "logchannel");
+    var logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === "logchannel");
     if(!logChannel){
         try{
             guild.channels.create("logchannel", {
-                type: "text",
-                topic: "Log channel for Valkyrie"
+                data: {
+                    type: "text",
+                    topic: "Log channel for Valkyrie",
+                    reason: "Automatically created a Log Channel. If you have one already, please use /config to point to that role. Else, feel free to edit this channel however you please."
+                },
             }).then(newLogChannel => {
-                Configs.update({logChannelID: newLogChannel.id}, {where: {guildID: guild.id}}).catch(e=>{
+                Configs.update({logChannelID: newLogChannel.id}, {where: {guildID: guild.id}}).then(() => {
+                    embed.addField("I automatically created a log channel", "Feel free to edit this channel however you want!");
+                }).catch(e=>{
                     console.log(e);
                     //return channel.send("Code 110 - Unknown Error with Database.");
                 })
@@ -428,7 +439,9 @@ client.on("guildCreate", async (guild) =>{
             //return channel.send("Code 120 - Bot has insufficient Permissions to Create a Channel.");
         }
     }else{
-        Configs.update({logChannelID: logChannel.id}, {where:{guildID: guild.id}}).catch(e => {
+        Configs.update({logChannelID: logChannel.id}, {where:{guildID: guild.id}}).then(() => {
+            embed.addField("I found an existing log channel", "You already had a channel called #logchannel, so I set that as the destination for all my log features.\nYou can edit this at any time with the command \`/config logchannel\`");
+        }).catch(e => {
             console.log(e);
             //return channel.send("Code 110 - Unknown Error with Database.");
         })
@@ -441,13 +454,9 @@ client.on("guildCreate", async (guild) =>{
         .addField("Support Discord", "Need help? Join https://discord.gg/NvqK5W9");
     if(mutedRoleExists == false){
         embed.addField("I couldn't find or create a muted role", "If you already have one, use `/config muterole` to change the server config");
-    }else{
-        embed.addField("I automatically created/found an existing mute role", "Feel free to edit the name, position or permissions however you want!");
     }
     if(logChannelExists == false){
         embed.addField("I couldn't find or create a log channel", "If you already have one, use `/config logchannel` to change the server config");
-    }else{
-        embed.addField("I automatically created/found an existing log channel", "Feel free to edit the name, position or permissions however you want!");
     }
 
     guild.members.fetch(guild.ownerID).then(guildOwner =>{
