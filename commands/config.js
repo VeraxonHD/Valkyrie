@@ -24,7 +24,7 @@ exports.execute = (interaction) => {
                 return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
             }).catch(e => {
                 interaction.reply("Code 110 - Unknown Error with Database.")
-                return console.log(e);
+                return console.error(e);
             });
             return interaction.reply(`Updated muted role to <@&${value}> successfully.`);
         }else if(conVar == "logchannel"){
@@ -32,7 +32,7 @@ exports.execute = (interaction) => {
                 return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
             }).catch(e => {
                 interaction.reply("Code 110 - Unknown Error with Database.")
-                return console.log(e);
+                return console.error(e);
             });
             return interaction.reply(`Updated log channel to <#${value}> successfully.`);
         }else if(conVar == "autorole"){
@@ -40,7 +40,7 @@ exports.execute = (interaction) => {
                 return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
             }).catch(e =>{
                 interaction.reply("Code 110 - Unknown Error with Database.");
-                return console.log(e);
+                return console.error(e);
             });
             return interaction.reply(`Updated auto role to <@&${value}> successfully.`);
         }else if(conVar == "welcomemsg"){
@@ -48,8 +48,27 @@ exports.execute = (interaction) => {
                 return interaction.reply(`Updated \`${conVar}\` to \`${value}\` successfully.`)
             }).catch(e =>{
                 interaction.reply("Code 110 - Unknown Error with Database.");
-                return console.log(e);
+                return console.error(e);
             });
+        }else if(conVar == "logs"){
+            var subConVar = args[0].options[0].name
+            var subValue = args[0].options[0].options[0].value
+
+            Configs.findOne({where: {guildID: guild.id}}).then(config => {
+                if(!config){
+                    return;
+                }else{
+                    var logTypes = config.logTypes;
+                    logTypes[subConVar] = subValue
+
+                    Configs.update({logTypes: logTypes}, {where: {guildID: guild.id}}).then(() => {
+                        return interaction.reply(`Updated log type \`${subConVar}\` to \`${value}\` successfully.`);
+                    }).catch(e => {
+                        interaction.reply("Code 110 - Unknown Error with Database.");
+                        return console.error(e);
+                    })
+                }
+            })
         }
     }
 }
