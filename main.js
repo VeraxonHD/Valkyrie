@@ -726,6 +726,47 @@ client.on("guildMemberAdd", member => {
 });
 
 /**
+ * 'guildMemberUpdate' - called when a member updates
+ * @param oldMember - old member object
+ * @param newMember - new member object
+ */
+client.on("guildMemberUpdate", async (oldMember, newMember) =>{
+    const guild = newMember.guild;
+    const member = newMember;
+    var logchannel;
+    await Configs.findOne({where: {guildID: guild.id}}).then(config => {
+        if(!config){
+            return;
+        }else{
+            logchannel = guild.channels.resolve(config.logChannelID)
+            if(!logchannel){
+                return;
+            }
+        }
+    });
+
+    if(oldMember.roles != newMember.roles){
+        const role = oldMember.roles.cache.difference(newMember.roles.cache).first();
+
+        const embed = new Discord.MessageEmbed()
+            .setAuthor(`${member.displayName}'s roles were updated`)
+            .addField("Update Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${member.user.tag} (${member.id})\n`)
+            .setColor("LUMINOUS_VIVID_PINK")
+            .setFooter("roles.guildmemberupdate.logs.valkyrie")
+            .setTimestamp(new Date());
+
+        if(oldMember.roles.cache.has(role.id) && !newMember.roles.cache.has(role.id)){
+            embed.addField("Role Removed", role)
+        }else if(!oldMember.roles.cache.has(role.id) && newMember.roles.cache.has(role.id)){
+            embed.addField("Role Added", role)
+        }
+
+        logchannel.send({embed});
+        
+    }
+})
+
+/**
  * voiceStateUpdate - Called when the voice state event is fired 
  * @param oldState - the old state
  * @param newState - the new state
