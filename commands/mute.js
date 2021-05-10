@@ -25,7 +25,7 @@ exports.execute = (interaction) => {
         var duration = -1;
         var reason = "No Reason Specified";
         args[0].options.forEach(arg => {
-            if(arg.name == "member" || arg.name == "userid"){
+            if(arg.name == "member" || arg.name == "user"){
                 targetID = arg.value;
             }else if(arg.name == "duration"){
                 duration = arg.value;

@@ -23,7 +23,7 @@ exports.execute = (interaction) => {
     var targetID;
     var reason = "No Reason Supplied";
     args[0].options.forEach(arg => {
-        if(arg.name == "member" || arg.name == "userid"){
+        if(arg.name == "member" || arg.name == "user"){
             targetID = arg.value;
         }else if(arg.name == "reason"){
             reason = arg.value;
