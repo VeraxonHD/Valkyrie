@@ -281,8 +281,8 @@ const Infractions = sequelize.define("Infractions", {
     moderatorID: {
         type: DataTypes.STRING,
         allowNull: false
-    },
-})
+    }
+});
 
 //DB Table Getters
 exports.getConfigsTable = () =>{

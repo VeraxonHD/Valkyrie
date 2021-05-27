@@ -14,6 +14,7 @@ exports.execute = async (interaction) => {
     const Users = main.getUsersTable();
     const GuildUsers = main.getGuildUsersTable();
     const Configs = main.getConfigsTable();
+    const Infractions = main.getInfractionsTable();
 
     if(member.permissions.has("MANAGE_MESSAGES") == false){
         return interaction.reply("Code 103 - Invalid Permissions.");
@@ -43,6 +44,14 @@ exports.execute = async (interaction) => {
 
             Users.increment("globalWarnCount",{where:{userID: targetID}});
             GuildUsers.increment("guildWarnCount",{where:{guildUserID: guildUserCompositeKey}});
+
+            Infractions.create({
+                guildID: guild.id,
+                userID: targetID,
+                type: 0,
+                reason: reason,
+                moderatorID: member.id
+            });
 
             Configs.findOne({where:{guildID: guild.id}}).then(async guildConfig => {
                 guild.channels.resolve(guildConfig.logChannelID).send(await logs.logWarn(targetMember, reason, member, guild));
