@@ -244,6 +244,45 @@ const LobbyHubs = sequelize.define("LobbyHubs", {
         allowNull: false
     }
 });
+const Infractions = sequelize.define("Infractions", {
+    infractionID: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+        unique: true
+    },
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    userID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    type: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            min: 0,
+            max: 3
+        }
+    },
+    reason: {
+        type: DataTypes.STRING,
+        validate:{
+            customValidator(value){
+                if(value === null){
+                    value = "No Reason Specified"
+                }
+            }
+        }
+    },
+    moderatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -272,6 +311,9 @@ exports.getLobbiesTable = () =>{
 }
 exports.getLobbyHubsTable = () =>{
     return LobbyHubs;
+}
+exports.getInfractionsTable = () =>{
+    return Infractions;
 }
 //Client Getter
 exports.getClient = () =>{
@@ -329,6 +371,7 @@ client.on("ready", async () =>{
     await Tags.sync();
     await Lobbies.sync();
     await LobbyHubs.sync();
+    await Infractions.sync();
 
     //Set Presence
     //client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
@@ -344,13 +387,95 @@ client.on("ready", async () =>{
         }).catch(e => {console.error(e)});
     } */
 
-    /*var testguild = client.guilds.cache.get("409365548766461952");
-    testguild.commands.fetch().then(cmds =>{
-        cmds.forEach(ccmds =>{
-            console.log(`${ccmds.name}, ${ccmds.id}`);
-        });
-    });*/
-    
+    const infractioncmd = {
+        "name": "infraction",
+        "description": "List or rescind a user's infractions",
+        "options": [
+            {
+                "name": "list",
+                "description": "List a user's infractions, by type",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "user",
+                        "description": "List a user by User ID",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "userid",
+                                "description": "The Users Unique Snowflake ID",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "mention",
+                        "description": "List a user my mention",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "member",
+                                "description": "The Users @Mention",
+                                "type": "USER",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "revoke",
+                "description": "Revoke an infraction from a user.",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "user",
+                        "description": "Select by User ID",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "userid",
+                                "description": "The Users Unique Snowflake ID",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "infractionid",
+                                "description": "The ID of the Infraction",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "mention",
+                        "description": "Select a user my mention",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "member",
+                                "description": "The Users @Mention",
+                                "type": "USER",
+                                "required": true
+                            },
+                            {
+                                "name": "infractionid",
+                                "description": "The ID of the Infraction",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+
+    var testguild = client.guilds.cache.get("409365548766461952");
+    await testguild.commands.create(infractioncmd).then(newcmd => {
+        console.log(newcmd.name + " " + newcmd.id)
+    })
 });
 
 /**
