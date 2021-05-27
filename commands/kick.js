@@ -1,4 +1,4 @@
-exports.execute = (interaction) => {
+exports.execute = async (interaction) => {
     //Interaction information
     const guild = interaction.guild;
     const channel = interaction.channel;
@@ -29,12 +29,12 @@ exports.execute = (interaction) => {
             }
         });
 
-        guild.members.fetch(targetID).then(targetMember =>{
+        guild.members.fetch(targetID).then(async targetMember =>{
             if(targetMember.kickable){
                 targetMember.kick(reason);
                 interaction.reply(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
-                Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
-                    guild.channels.resolve(guildConfig.logChannelID).send(logs.logKick(targetMember, reason, member));
+                Configs.findOne({where:{guildID: guild.id}}).then(async guildConfig => {
+                    guild.channels.resolve(guildConfig.logChannelID).send(await logs.logKick(targetMember, reason, member, guild));
                 }).then(()=>{
                     var guildUserCompositeKey = guild.id + targetID
                     Users.increment("globalKickCount",{where:{userID: targetID}});

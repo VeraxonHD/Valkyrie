@@ -1,4 +1,4 @@
-exports.execute = (interaction) => {
+exports.execute = async (interaction) => {
     //Interaction information
     const guild = interaction.guild;
     const channel = interaction.channel;
@@ -30,13 +30,13 @@ exports.execute = (interaction) => {
         }
     });
 
-    guild.members.fetch(targetID).then(targetMember => {
+    guild.members.fetch(targetID).then(async targetMember => {
         Warns.create({
             guildID: guild.id,
             memberID: targetID,
             moderatorID: member.id,
             reason: reason
-        }).then(() => {
+        }).then(async () => {
             const guildUserCompositeKey = guild.id + targetMember.id;
             interaction.reply(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);
             targetMember.send(`You have been Warned in **${guild.name}**. Reason: **${reason}**.`);
@@ -44,8 +44,8 @@ exports.execute = (interaction) => {
             Users.increment("globalWarnCount",{where:{userID: targetID}});
             GuildUsers.increment("guildWarnCount",{where:{guildUserID: guildUserCompositeKey}});
 
-            Configs.findOne({where:{guildID: guild.id}}).then(guildConfig => {
-                guild.channels.resolve(guildConfig.logChannelID).send(logs.logWarn(targetMember, reason, member));
+            Configs.findOne({where:{guildID: guild.id}}).then(async guildConfig => {
+                guild.channels.resolve(guildConfig.logChannelID).send(await logs.logWarn(targetMember, reason, member, guild));
             })
         }).catch(err =>{
             console.log(err);

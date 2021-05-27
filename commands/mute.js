@@ -1,4 +1,4 @@
-exports.execute = (interaction) => {
+exports.execute = async (interaction) => {
     //Interaction information
     const guild = interaction.guild;
     const channel = interaction.channel;
@@ -41,13 +41,13 @@ exports.execute = (interaction) => {
             return interaction.reply("Code 102 - Invalid Argument: 'duration'.\nMust follow (int)(scale)\nExample: ```'10s' - 10 seconds\n'30m' - 30 minutes\n'2h' - 2 Hours\nFull list of examples: https://github.com/vercel/ms#examples```")
         }
 
-        Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
+        Configs.findOne({where: {guildID: guild.id}}).then(async guildConfig =>{
             var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);
             if(!mutedRole){
                 return interaction.reply("Code 100 - Muted Role is invalid - database corruption?");
             }
-            guild.members.fetch(targetID).then(targetMember =>{
-                targetMember.roles.add(mutedRole).then(newMember =>{
+            guild.members.fetch(targetID).then(async targetMember =>{
+                targetMember.roles.add(mutedRole).then(async newMember =>{
                     interaction.reply(`**${newMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
                     newMember.send(`You have been Muted in **${guild.name}** for **${duration}**. Reason: **${reason}**.`);
                     Mutes.create({
@@ -63,7 +63,7 @@ exports.execute = (interaction) => {
                         interaction.reply("Code 110 - Unknown Error with Database.");
                         console.log(e);
                     });
-                    guild.channels.resolve(guildConfig.logChannelID).send(logs.logMute(targetMember, duration, reason, member));
+                    guild.channels.resolve(guildConfig.logChannelID).send(await logs.logMute(targetMember, duration, reason, member, guild));
                 }).catch(e=>{
                     console.log(e);
                     return interaction.reply("Code 100 - Failed to add Mute Role to User.");

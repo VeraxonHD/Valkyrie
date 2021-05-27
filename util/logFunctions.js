@@ -4,15 +4,16 @@
  * @param {String} duration
  * @param {String} reason
  * @param {Discord.GuildMember} moderator
+ * @param {Discord.Guild} guild
  */
-exports.logMute = (targetMember, duration, reason, moderator)=>{
+exports.logMute = async (targetMember, duration, reason, moderator, guild)=>{
     const Discord = require("discord.js");
     const embed = new Discord.MessageEmbed()
         .setAuthor("Member Muted")
-        .addField("Member", targetMember, true)
+        .addField("Member", await guild.members.resolve(targetMember).toString(), true)
         .addField("Duration", duration, true)
         .addField("Reason", reason, true)
-        .addField("Moderator", moderator)
+        .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
         .setFooter("logMute.logs.valkyrie");
     return {embed};
@@ -23,14 +24,15 @@ exports.logMute = (targetMember, duration, reason, moderator)=>{
  * @param {Discord.GuildMember} targetMember 
  * @param {String} reason
  * @param {Discord.GuildMember} moderator
+ * @param {Discord.Guild} guild
  */
-exports.logBan = (targetMember, reason, moderator)=>{
+exports.logBan = async (targetMember, reason, moderator, guild)=>{
     const Discord = require("discord.js");
     const embed = new Discord.MessageEmbed()
         .setAuthor("Member Banned")
-        .addField("Member", targetMember, true)
+        .addField("Member", await guild.members.resolve(targetMember).toString(), true)
         .addField("Reason", reason, true)
-        .addField("Moderator", moderator)
+        .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
         .setFooter("logBan.logs.valkyrie");
     return {embed};
@@ -41,14 +43,15 @@ exports.logBan = (targetMember, reason, moderator)=>{
  * @param {Discord.GuildMember} targetMember 
  * @param {String} reason
  * @param {Discord.GuildMember} moderator
+ * @param {Discord.Guild} guild
  */
-exports.logKick = (targetMember, reason, moderator)=>{
+exports.logKick = async (targetMember, reason, moderator, guild)=>{
     const Discord = require("discord.js");
     const embed = new Discord.MessageEmbed()
         .setAuthor("Member Kicked")
-        .addField("Member", targetMember, true)
+        .addField("Member", await guild.members.resolve(targetMember).toString(), true)
         .addField("Reason", reason, true)
-        .addField("Moderator", moderator)
+        .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
         .setFooter("logKick.logs.valkyrie");
     return {embed};
@@ -59,14 +62,15 @@ exports.logKick = (targetMember, reason, moderator)=>{
  * @param {Discord.GuildMember} targetMember 
  * @param {String} reason
  * @param {Discord.GuildMember} moderator
+ * @param {Discord.Guild} guild
  */
-exports.logWarn = (targetMember, reason, moderator)=>{
+exports.logWarn = async (targetMember, reason, moderator, guild)=>{
     const Discord = require("discord.js");
     const embed = new Discord.MessageEmbed()
         .setAuthor("Member Warned")
-        .addField("Member", targetMember, true)
+        .addField("Member", await guild.members.resolve(targetMember).toString(), true)
         .addField("Reason", reason, true)
-        .addField("Moderator", moderator)
+        .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
         .setFooter("logWarn.logs.valkyrie");
     return {embed};
