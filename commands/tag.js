@@ -16,131 +16,7 @@ exports.execute = async (interaction) => {
     const Tags = main.getTagsTable();
     const client = main.getClient();
 
-    if(!args[0].options[0].options){
-        var subArgs = args[0].options;
-        if(args[0].name == "create"){
-            if(!member.permissions.has("MANAGE_MESSAGES")){
-                return interaction.reply("Code 103 - Invalid permissions. Missing permission MANAGE_MESSAGES");
-            }
-
-            var tagName = subArgs[0].value;
-            var tagResponse = subArgs[1].value;
-
-            Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
-                if(!tag){
-                    Tags.create({
-                        guildID: guild.id,
-                        creatorID: member.id,
-                        name: tagName,
-                        response: tagResponse,
-                        access: {
-                            "members": [],
-                            "roles": [],
-                            "channels": []
-                        },
-                        uses: 0
-                    }).then(() => {
-                        return interaction.reply(`Created a new tag.\nName: **${tagName}**\nResponse **${tagResponse}**`);
-                    }).catch(e =>{
-                        console.error(e);
-                        return interaction.reply("Error 110 - An Error with the Database occured.");
-                    })
-                }else{
-                    return interaction.reply(`Tag **${tagName}** already exists. If you want to modify this tag, try \`/tag modify name\` or \`/tag modify response\``);
-                }
-            }).catch(e =>{
-                console.error(e);
-                return interaction.reply("Error 110 - An Error with the Database occured.");
-            })
-        }else if(args[0].name == "delete"){
-            if(!member.permissions.has("MANAGE_MESSAGES")){
-                return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
-            }
-
-            var tagName = subArgs[0].value;
-            
-            Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
-                if(!tag){
-                    interaction.reply(`Tag **${tagName}** does not exist.`);
-                }else{
-                    tag.destroy().then(() =>{
-                        return interaction.reply(`Tag **${tagName}** was deleted successfully.`);
-                    }).catch(e =>{
-                        console.error(e);
-                        return interaction.reply("Error 110 - An Error with the Database occured.");
-                    })
-                }
-            }).catch(e =>{
-                interaction.reply("Error 110 - An Error with the Database occured.");
-                return console.error(e);
-            })
-        }else if(args[0].name == "info"){
-            var tagName = subArgs[0].value;
-            Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
-                if(!tag){
-                    interaction.reply(`Tag **${tagName}** does not exist.`);
-                }else{
-                    var tagGuild = tag.guildID;
-                    var tagCreator = tag.creatorID;
-                    var tagResponse = tag.response;
-                    var tagUses = tag.uses;
-                    var tagCreatedAt = tag.createdAt;
-
-                    var tagAccessMembersRaw = tag.access["members"];
-                    var tagAccessRolesRaw = tag.access["roles"];
-                    var tagAccessChannelsRaw = tag.access["channels"];
-
-                    var tagAccessMembers = "All Members";
-                    if(tagAccessMembersRaw.length > 0){
-                        tagAccessMembers = [];
-                        for(var i = 0; i < tagAccessMembersRaw.length; i++){
-                            tagAccessMembers[i] = `<@${tagAccessMembersRaw[i]}>`;
-                        }
-                    }
-                    
-
-                    var tagAccessRoles = "All Roles";
-                    if(tagAccessRolesRaw.length > 0){
-                        tagAccessRoles = [];
-                        for(var i = 0; i < tagAccessRolesRaw.length; i++){
-                            tagAccessRoles[i] = `<@${tagAccessRolesRaw[i]}>`;
-                        }
-                    }
-
-                    var tagAccessChannels = "All Channels";
-                    if(tagAccessChannelsRaw.length > 0){
-                        tagAccessChannels = [];
-                        for(var i = 0; i < tagAccessChannelsRaw.length; i++){
-                            tagAccessChannels[i] = `<@${tagAccessChannelsRaw[i]}>`;
-                        }
-                    }
-
-                    console.log(tagAccessMembers)
-                    console.log(tagAccessRoles)
-                    console.log(tagAccessChannels)
-
-                    var embed = new Discord.MessageEmbed()
-                        .setAuthor(`Information for tag ${tagName}`)
-                        .addField("Guild", client.guilds.cache.get(tagGuild).name)
-                        .addField("Creator", `<@${tagCreator}>`)
-                        .addField("Response Text", tagResponse)
-                        .addField("Whitelisted Members", tagAccessMembers, true)
-                        .addField("Whitelisted Roles", tagAccessRoles, true)
-                        .addField("Whitelisted Channels", tagAccessChannels, true)
-                        .addField("Usage Count", tagUses)
-                        .addField("Created At", df(tagCreatedAt, "dd/mm/yyyy HH:MM:ss Z"))
-                        .setFooter(`${tagName}.info.tags.valkyrie`)
-                        .setColor("#00C597")
-                        .setTimestamp(new Date());
-                    
-                    return interaction.reply({embeds: [embed]});
-                }
-            }).catch(e =>{
-                interaction.reply("Error 110 - An Error with the Database occured.");
-                return console.error(e);
-            })
-        }
-    }else if(args[0].name == "modify"){
+    if(args[0].name == "modify"){
         if(!member.permissions.has("MANAGE_MESSAGES")){
             return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
         }
@@ -149,8 +25,6 @@ exports.execute = async (interaction) => {
         if(subCommand.name == "name"){
             var tagOldName = subArgs[0].value;
             var tagNewName = subArgs[1].value;
-
-            console.log(subArgs)
 
             Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagOldName}]}}).then(tag =>{
                 if(!tag){
@@ -170,8 +44,6 @@ exports.execute = async (interaction) => {
         }else if(subCommand.name == "response"){
             var tagName = subArgs[0].value;
             var tagNewResponse = subArgs[1].value;
-
-            console.log(subArgs)
 
             Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
                 if(!tag){
@@ -248,6 +120,141 @@ exports.execute = async (interaction) => {
                 interaction.reply("Error 110 - An Error with the Database occured.");
                 return console.error(e);
             });
+        }
+    }else if(args[0].name == "list"){
+        Tags.findAll({where: {guildID: guild.id}}).then(tags => {
+            var tagData = [];
+            for(var i = 0; i < tags.length; i++){
+                tagData[i] = `**${tags[i].name}** - ${tags[i].response}`
+            }
+
+            const embed = new Discord.MessageEmbed()
+                .setAuthor(`List of Tags in ${guild.name}`)
+                .addField("Tags", tagData)
+                .setFooter(`list.tags.valkyrie`)
+                .setColor("#00C597")
+                .setTimestamp(new Date());
+            interaction.reply({embeds: [embed]});
+        })
+    }else{
+        var subArgs = args[0].options;
+        if(args[0].name == "create"){
+            if(!member.permissions.has("MANAGE_MESSAGES")){
+                return interaction.reply("Code 103 - Invalid permissions. Missing permission MANAGE_MESSAGES");
+            }
+
+            var tagName = subArgs[0].value;
+            var tagResponse = subArgs[1].value;
+
+            Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
+                if(!tag){
+                    Tags.create({
+                        guildID: guild.id,
+                        creatorID: member.id,
+                        name: tagName,
+                        response: tagResponse,
+                        access: {
+                            "members": [],
+                            "roles": [],
+                            "channels": []
+                        },
+                        uses: 0
+                    }).then(() => {
+                        return interaction.reply(`Created a new tag.\nName: **${tagName}**\nResponse **${tagResponse}**`);
+                    }).catch(e =>{
+                        console.error(e);
+                        return interaction.reply("Error 110 - An Error with the Database occured.");
+                    })
+                }else{
+                    return interaction.reply(`Tag **${tagName}** already exists. If you want to modify this tag, try \`/tag modify name\` or \`/tag modify response\``);
+                }
+            }).catch(e =>{
+                console.error(e);
+                return interaction.reply("Error 110 - An Error with the Database occured.");
+            })
+        }else if(args[0].name == "delete"){
+            if(!member.permissions.has("MANAGE_MESSAGES")){
+                return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
+            }
+
+            var tagName = subArgs[0].value;
+            
+            Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
+                if(!tag){
+                    interaction.reply(`Tag **${tagName}** does not exist.`);
+                }else{
+                    tag.destroy().then(() =>{
+                        return interaction.reply(`Tag **${tagName}** was deleted successfully.`);
+                    }).catch(e =>{
+                        console.error(e);
+                        return interaction.reply("Error 110 - An Error with the Database occured.");
+                    })
+                }
+            }).catch(e =>{
+                interaction.reply("Error 110 - An Error with the Database occured.");
+                return console.error(e);
+            })
+        }else if(args[0].name == "info"){
+            var tagName = subArgs[0].value;
+            Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(async tag =>{
+                if(!tag){
+                    interaction.reply(`Tag **${tagName}** does not exist.`);
+                }else{
+                    var tagGuild = tag.guildID;
+                    var tagCreator = tag.creatorID;
+                    var tagResponse = tag.response;
+                    var tagUses = tag.uses;
+                    var tagCreatedAt = tag.createdAt;
+
+                    var tagAccessMembersRaw = tag.access["members"];
+                    var tagAccessRolesRaw = tag.access["roles"];
+                    var tagAccessChannelsRaw = tag.access["channels"];
+
+                    var tagAccessMembers = "All Members";
+                    if(tagAccessMembersRaw.length > 0){
+                        tagAccessMembers = [];
+                        for(var i = 0; i < tagAccessMembersRaw.length; i++){
+                            tagAccessMembers[i] = await guild.members.resolve(tagAccessMembersRaw[i]).toString();
+                        }
+                    }
+                    
+
+                    var tagAccessRoles = "All Roles";
+                    if(tagAccessRolesRaw.length > 0){
+                        tagAccessRoles = [];
+                        for(var i = 0; i < tagAccessRolesRaw.length; i++){
+                            tagAccessRoles[i] = await guild.roles.resolve(tagAccessRolesRaw[i]).toString();
+                        }
+                    }
+
+                    var tagAccessChannels = "All Channels";
+                    if(tagAccessChannelsRaw.length > 0){
+                        tagAccessChannels = [];
+                        for(var i = 0; i < tagAccessChannelsRaw.length; i++){
+                            tagAccessChannels[i] = await guild.channels.resolve(tagAccessChannelsRaw[i]).toString();
+                        }
+                    }
+
+                    var embed = new Discord.MessageEmbed()
+                        .setAuthor(`Information for tag ${tagName}`)
+                        .addField("Guild", client.guilds.cache.get(tagGuild).name)
+                        .addField("Creator", await guild.members.resolve(tagCreator).toString())
+                        .addField("Response Text", tagResponse)
+                        .addField("Whitelisted Members", tagAccessMembers, true)
+                        .addField("Whitelisted Roles", tagAccessRoles, true)
+                        .addField("Whitelisted Channels", tagAccessChannels, true)
+                        .addField("Usage Count", tagUses)
+                        .addField("Created At", df(tagCreatedAt, "dd/mm/yyyy HH:MM:ss Z"))
+                        .setFooter(`${tagName}.info.tags.valkyrie`)
+                        .setColor("#00C597")
+                        .setTimestamp(new Date());
+                    
+                    return interaction.reply({embeds: [embed]});
+                }
+            }).catch(e =>{
+                interaction.reply("Error 110 - An Error with the Database occured.");
+                return console.error(e);
+            })
         }
     }
 }

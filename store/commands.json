@@ -554,6 +554,11 @@
                         "required": true
                     }
                 ]
+            },
+            {
+                "name": "list",
+                "description": "List all embeds in the guild, as well as their responses.",
+                "type": "SUB_COMMAND"
             }
         ]
     },
