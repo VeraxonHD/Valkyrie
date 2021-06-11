@@ -29,19 +29,20 @@ exports.execute = async (interaction) => {
                 var infKicks = [];
                 var infBans = [];
 
-                infractions.forEach(async infraction => {
+                infractions.forEach(infraction => {
                     switch(infraction.type){
                         case 0: 
-                            infWarns.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${await guild.members.resolve(infraction.moderatorID)}`);
+                            infWarns.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${guild.members.resolve(infraction.moderatorID)}`);
+                            console.log(`Pushing warn ${infraction} to array`)
                             break;
                         case 1: 
-                            infMutes.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${await guild.members.resolve(infraction.moderatorID)}`);
+                            infMutes.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${guild.members.resolve(infraction.moderatorID)}`);
                             break;
                         case 2: 
-                            infKicks.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${await guild.members.resolve(infraction.moderatorID)}`);
+                            infKicks.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${guild.members.resolve(infraction.moderatorID)}`);
                             break;
                         case 3:
-                            infBans.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${await guild.members.resolve(infraction.moderatorID)}`);
+                            infBans.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${guild.members.resolve(infraction.moderatorID)}`);
                             break;
                         default:
                             break;
@@ -59,22 +60,22 @@ exports.execute = async (interaction) => {
                 if(infWarns.length > 0){
                     embed.addField("Warns", infWarns);
                 }else{
-                    embed.addField("Warns", "No Warns have been applied for this user.");
+                    embed.addField("Warns", "None");
                 }
                 if(infMutes.length > 0){
                     embed.addField("Mutes", infMutes);
                 }else{
-                    embed.addField("Mutes", "No Mutes have been applied for this user.");
+                    embed.addField("Mutes", "None");
                 }
                 if(infKicks.length > 0){
                     embed.addField("Kicks", infKicks);
                 }else{
-                    embed.addField("Kicks", "No Kicks have been applied for this user.");
+                    embed.addField("Kicks", "None");
                 }
                 if(infBans.length > 0){
                     embed.addField("Bans", infBans);
                 }else{
-                    embed.addField("Bans", "No Bans have been applied for this user.");
+                    embed.addField("Bans", "None");
                 }
                     
                 interaction.reply({embeds: [embed]});
