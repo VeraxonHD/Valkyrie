@@ -409,94 +409,10 @@ client.on("ready", async () =>{
         }).catch(e => {console.error(e)});
     } */
 
-    const infractioncmd = {
-        "name": "infraction",
-        "description": "List or rescind a user's infractions",
-        "options": [
-            {
-                "name": "list",
-                "description": "List a user's infractions, by type",
-                "type": "SUB_COMMAND_GROUP",
-                "options": [
-                    {
-                        "name": "user",
-                        "description": "List a user by User ID",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "userid",
-                                "description": "The Users Unique Snowflake ID",
-                                "type": "STRING",
-                                "required": true
-                            }
-                        ]
-                    },
-                    {
-                        "name": "mention",
-                        "description": "List a user my mention",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "member",
-                                "description": "The Users @Mention",
-                                "type": "USER",
-                                "required": true
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "revoke",
-                "description": "Revoke an infraction from a user.",
-                "type": "SUB_COMMAND_GROUP",
-                "options": [
-                    {
-                        "name": "user",
-                        "description": "Select by User ID",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "userid",
-                                "description": "The Users Unique Snowflake ID",
-                                "type": "STRING",
-                                "required": true
-                            },
-                            {
-                                "name": "infractionid",
-                                "description": "The ID of the Infraction",
-                                "type": "STRING",
-                                "required": true
-                            }
-                        ]
-                    },
-                    {
-                        "name": "mention",
-                        "description": "Select a user my mention",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "member",
-                                "description": "The Users @Mention",
-                                "type": "USER",
-                                "required": true
-                            },
-                            {
-                                "name": "infractionid",
-                                "description": "The ID of the Infraction",
-                                "type": "STRING",
-                                "required": true
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-    }
     var testguild = client.guilds.cache.get("409365548766461952");
-    await testguild.commands.create(infractioncmd).then(newcmd => {
+    /* await testguild.commands.create(infractioncmd).then(newcmd => {
         console.log(newcmd.name + " " + newcmd.id)
-    })
+    }) */
 });
 
 /**
@@ -908,7 +824,7 @@ client.on("guildMemberRemove", async (member) => {
         if(logchannel){
             const embed = new Discord.MessageEmbed()
                 .setAuthor(`${member.user.tag} left the server`)
-                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
+                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.user.tag} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
                 .setThumbnail(member.user.avatarURL())
                 .setColor("DARK_RED")
                 .setFooter("guildmemberremove.logs.valkyrie")
