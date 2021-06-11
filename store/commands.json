@@ -638,5 +638,49 @@
                 ]
             }
         ]
+    },
+    {
+        "name": "divider",
+        "description": "Automatically add and remove roles if the member has roles within a certain range.",
+        "options": [
+            {
+                "name": "add",
+                "description": "Register a new auto-divider",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "divider-role",
+                        "description": "The role to apply to the user",
+                        "type": "ROLE",
+                        "required": true
+                    },
+                    {
+                        "name": "top-role",
+                        "description": "The role at the top of the range",
+                        "type": "ROLE",
+                        "required": true
+                    },
+                    {
+                        "name": "bottom-role",
+                        "description": "The role at the bottom of the range",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "remove",
+                "description": "Un-register a new auto-divider",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "divider-role",
+                        "description": "The role to un-register",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            }
+        ]
     }
 ]

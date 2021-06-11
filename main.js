@@ -283,6 +283,24 @@ const Infractions = sequelize.define("Infractions", {
         allowNull: false
     }
 });
+const Dividers = sequelize.define("Dividers", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    dividerRoleID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    topRoleID:{
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    bottomRoleID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -314,6 +332,9 @@ exports.getLobbyHubsTable = () =>{
 }
 exports.getInfractionsTable = () =>{
     return Infractions;
+}
+exports.getDividersTable = () =>{
+    return Dividers;
 }
 //Client Getter
 exports.getClient = () =>{
@@ -372,6 +393,7 @@ client.on("ready", async () =>{
     await Lobbies.sync();
     await LobbyHubs.sync();
     await Infractions.sync();
+    await Dividers.sync();
 
     //Set Presence
     //client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
@@ -471,7 +493,6 @@ client.on("ready", async () =>{
             }
         ]
     }
-
     var testguild = client.guilds.cache.get("409365548766461952");
     await testguild.commands.create(infractioncmd).then(newcmd => {
         console.log(newcmd.name + " " + newcmd.id)
@@ -910,6 +931,39 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
     const member = newMember;
 
     if((oldMember && newMember) && (oldMember.roles != newMember.roles)){
+        const diff = oldMember.roles.cache.difference(newMember.roles.cache).first();
+        if(oldMember.roles.cache.has(diff.id) && !newMember.roles.cache.has(diff.id)){
+            Dividers.findAll({where: {guildID: guild.id}}).then(dividers =>{
+                dividers.forEach(divider => {
+                    var topRole = guild.roles.resolve(divider.topRoleID);
+                    var bottomRole = guild.roles.resolve(divider.bottomRoleID);
+                    var dividerRole = guild.roles.resolve(divider.dividerRoleID);
+                    if(diff.position >= bottomRole.position && diff.position <= topRole.position && !member.roles.cache.has(dividerRole)){
+                        var search = false;
+                        member.roles.cache.forEach(role => {
+                            if(role.position >= bottomRole.position && role.position <= topRole.position){
+                                search = true;
+                            }
+                        })
+                        if(search == false){
+                            member.roles.remove(dividerRole);
+                        }
+                    }
+                })
+            })
+        }else if(!oldMember.roles.cache.has(diff.id) && newMember.roles.cache.has(diff.id)){
+            Dividers.findAll({where: {guildID: guild.id}}).then(dividers =>{
+                dividers.forEach(divider => {
+                    var topRole = guild.roles.resolve(divider.topRoleID);
+                    var bottomRole = guild.roles.resolve(divider.bottomRoleID);
+                    var dividerRole = guild.roles.resolve(divider.dividerRoleID);
+                    if(diff.position >= bottomRole.position && diff.position <= topRole.position && !member.roles.cache.has(dividerRole)){
+                        member.roles.add(dividerRole);
+                    }
+                })
+            })
+        }
+        
         const enabled = await common.getLogTypeState(guild.id, "messageedit");
         if(enabled == false){
             return;
