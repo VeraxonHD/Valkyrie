@@ -10,7 +10,6 @@ exports.execute = async (interaction) => {
     const logs = require("../util/logFunctions.js");
 
     //Database Retrieval
-    const Warns = main.getWarnsTable();
     const Users = main.getUsersTable();
     const GuildUsers = main.getGuildUsersTable();
     const Configs = main.getConfigsTable();
@@ -32,11 +31,12 @@ exports.execute = async (interaction) => {
     });
 
     guild.members.fetch(targetID).then(async targetMember => {
-        Warns.create({
+        Infractions.create({
             guildID: guild.id,
-            memberID: targetID,
-            moderatorID: member.id,
-            reason: reason
+            userID: targetID,
+            type: 0,
+            reason: reason,
+            moderatorID: member.id
         }).then(async () => {
             const guildUserCompositeKey = guild.id + targetMember.id;
             interaction.reply(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);
@@ -44,14 +44,6 @@ exports.execute = async (interaction) => {
 
             Users.increment("globalWarnCount",{where:{userID: targetID}});
             GuildUsers.increment("guildWarnCount",{where:{guildUserID: guildUserCompositeKey}});
-
-            Infractions.create({
-                guildID: guild.id,
-                userID: targetID,
-                type: 0,
-                reason: reason,
-                moderatorID: member.id
-            });
 
             Configs.findOne({where:{guildID: guild.id}}).then(async guildConfig => {
                 guild.channels.resolve(guildConfig.logChannelID).send(await logs.logWarn(targetMember, reason, member, guild));
