@@ -17,6 +17,8 @@ exports.execute = async (interaction) => {
     const Configs = main.getConfigsTable();
     const Infractions = main.getInfractionsTable();
 
+    if(!member.permissions.has("MANAGE_MESSAGES")){ return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES") }
+
     if(args[0].name == "list"){
         const subCommandArgs = args[0].options[0].options[0];
         const targetID = subCommandArgs.value;
@@ -33,7 +35,6 @@ exports.execute = async (interaction) => {
                     switch(infraction.type){
                         case 0: 
                             infWarns.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${guild.members.resolve(infraction.moderatorID)}`);
-                            console.log(`Pushing warn ${infraction} to array`)
                             break;
                         case 1: 
                             infMutes.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${guild.members.resolve(infraction.moderatorID)}`);
@@ -48,8 +49,6 @@ exports.execute = async (interaction) => {
                             break;
                     }
                 });
-
-                console.log(`After: ${infWarns}`)
 
                 const embed = new Discord.MessageEmbed()
                     .setAuthor(`List of Infractions for ${targetMember.user.tag} in ${guild.name}`)
@@ -84,6 +83,40 @@ exports.execute = async (interaction) => {
             }
         });
     }else if(args[0].name == "revoke"){
+        const subCommandArgs = args[0].options[0].options;
+        const targetID = subCommandArgs[0].value;
+        const targetMember = await guild.members.resolve(targetID);
+        const argInfractionID = subCommandArgs[1].value;
 
+        Infractions.findOne({where: {[Op.and]: [{guildID: guild.id}, {userID: targetID}, {infractionID: argInfractionID}]}}).then(row => {
+            if(!row){
+                return interaction.reply(`That user does not have an infraction with ID ${argInfractionID}. Try \`/infraction list\`.`);
+            }else{
+                row.destroy().then(() =>{
+                    var guildUserCompositeKey = guild.id + targetMember.id;
+                    switch(row.type){
+                        case 0:
+                            GuildUsers.decrement("guildWarnCount", {where: {guildUserID: guildUserCompositeKey}});
+                            Users.decrement("globalWarnCount", {where: {userID: targetID}});
+                            break;
+                        case 1:
+                            GuildUsers.decrement("guildMuteCount", {where: {guildUserID: guildUserCompositeKey}});
+                            Users.decrement("globalMuteCount", {where: {userID: targetID}});
+                            break;
+                        case 2:
+                            GuildUsers.decrement("guildKickCount", {where: {guildUserID: guildUserCompositeKey}});
+                            Users.decrement("globalKickCount", {where: {userID: targetID}});
+                            break;
+                        case 3:
+                            GuildUsers.decrement("guildBanCount", {where: {guildUserID: guildUserCompositeKey}});
+                            Users.decrement("globalBanCount", {where: {userID: targetID}});
+                            break;
+                        default:
+                            break;
+                    }
+                    return interaction.reply("Successfully deleted the specified infraction.");
+                })
+            }
+        })
     }
 }
