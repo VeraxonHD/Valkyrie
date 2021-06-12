@@ -804,7 +804,7 @@ client.on("guildMemberRemove", async (member) => {
         if(logchannel){
             const embed = new Discord.MessageEmbed()
                 .setAuthor(`${member.user.tag} left the server`)
-                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.user.tag} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
+                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.toString()? member.toString() : member.user.tag} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
                 .setThumbnail(member.user.avatarURL())
                 .setColor("DARK_RED")
                 .setFooter("guildmemberremove.logs.valkyrie")

@@ -1,3 +1,16 @@
+class longFieldHandler{
+    constructor(fieldArray) {
+        //console.log("CONSTRUCTOR CALLED")
+        if(!fieldArray){
+            fieldArray = [];
+        }
+        this.content = fieldArray;
+    }
+    getContent(){
+        return this.content;
+    }
+}
+
 exports.execute = async (interaction) => {
     //Interaction information
     const guild = interaction.guild;
@@ -123,17 +136,47 @@ exports.execute = async (interaction) => {
         }
     }else if(args[0].name == "list"){
         Tags.findAll({where: {guildID: guild.id}}).then(tags => {
-            var tagData = [];
-            for(var i = 0; i < tags.length; i++){
-                tagData[i] = `**${tags[i].name}** - ${tags[i].response}`
+            var tagLength = 0;
+            var thisFieldTagContent = [];
+            var tagFields = [];
+            var tagFieldCounter = 0;
+            while(tags.length != 0){
+                //console.log(`Current Length of Tags Array: ${tags.length}`)
+                var thisTag = tags.pop();
+                tagString = `**${thisTag.name}** - ${thisTag.response}`;
+                //console.log(`tagString: ${tagString}`)
+                tagLength += tagString.length;
+                //console.log(`Field String Length (tagLength): ${tagLength}`)
+                if(tagLength >= 1023){
+                    tagFields.push(new longFieldHandler(thisFieldTagContent))
+                    //console.log(`EXCEEDED 1023 CHARACTERS. Pusing the current fieldcontent: ${thisFieldTagContent}`)
+                    //Re-push the tag onto the stack so it can be picked up next iteration
+                    tags.push(thisTag);
+                    //reset variables
+                    tagLength = 0;
+                    tagFieldCounter++;
+                    thisFieldTagContent = [];
+                }else{
+                    thisFieldTagContent.push(tagString)
+                    //console.log(`Pushing string to current field content: ${thisFieldTagContent}`)
+                    if(tags.length == 0){
+                        //console.log(`Tags Length hit 0. Pushing final content: ${thisFieldTagContent}`)
+                        tagFields.push(new longFieldHandler(thisFieldTagContent))
+                    }
+                }
             }
 
             const embed = new Discord.MessageEmbed()
                 .setAuthor(`List of Tags in ${guild.name}`)
-                .addField("Tags", tagData)
                 .setFooter(`list.tags.valkyrie`)
                 .setColor("#00C597")
                 .setTimestamp(new Date());
+            //console.log(`\n Tag Fields Length: ${tagFields.length}`)
+            var number = 1;
+            tagFields.forEach(field =>{
+                embed.addField(`Tags - Page ${number}`, field.getContent())
+                number++;
+            })
             interaction.reply({embeds: [embed]});
         })
     }else{
