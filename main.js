@@ -164,22 +164,6 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
         defaultValue: {}
     }
 })
-const Warns = sequelize.define("Warns", {
-    guildID: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    memberID: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    moderatorID: {
-        type: DataTypes.STRING
-    },
-    reason: {
-        type: DataTypes.STRING
-    }
-});
 const Tags = sequelize.define("Tags", {
     guildID: {
         type: DataTypes.STRING,
@@ -318,9 +302,6 @@ exports.getGuildUsersTable = () =>{
 exports.getReactionRolesTable = () =>{
     return ReactionRoles;
 }
-exports.getWarnsTable = () =>{
-    return Warns;
-}
 exports.getTagsTable = () =>{
     return Tags;
 }
@@ -388,7 +369,6 @@ client.on("ready", async () =>{
     await GuildUsers.sync();
     await ReactionRoles.sync();
     await Mutes.sync();
-    await Warns.sync();
     await Tags.sync();
     await Lobbies.sync();
     await LobbyHubs.sync();
@@ -413,20 +393,6 @@ client.on("ready", async () =>{
     /* await testguild.commands.create(infractioncmd).then(newcmd => {
         console.log(newcmd.name + " " + newcmd.id)
     }) */
-
-    Warns.findAll().then(warns => {
-        warns.forEach(warn =>{
-            Infractions.create({
-                guildID: warn.guildID,
-                userID: warn.memberID,
-                type: 0,
-                reason: warn.reason,
-                moderatorID: warn.moderatorID,
-                createdAt: warn.createdAt,
-                updatedAt: warn.updatedAt
-            }).then(()=>{warn.destroy()})
-        });
-    })
 });
 
 /**
