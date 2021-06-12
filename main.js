@@ -164,6 +164,22 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
         defaultValue: {}
     }
 })
+const Warns = sequelize.define("Warns", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    moderatorID: {
+        type: DataTypes.STRING
+    },
+    reason: {
+        type: DataTypes.STRING
+    }
+});
 const Tags = sequelize.define("Tags", {
     guildID: {
         type: DataTypes.STRING,
@@ -302,6 +318,9 @@ exports.getGuildUsersTable = () =>{
 exports.getReactionRolesTable = () =>{
     return ReactionRoles;
 }
+exports.getWarnsTable = () =>{
+    return Warns;
+}
 exports.getTagsTable = () =>{
     return Tags;
 }
@@ -369,6 +388,7 @@ client.on("ready", async () =>{
     await GuildUsers.sync();
     await ReactionRoles.sync();
     await Mutes.sync();
+    await Warns.sync();
     await Tags.sync();
     await Lobbies.sync();
     await LobbyHubs.sync();
@@ -818,7 +838,7 @@ client.on("guildMemberRemove", async (member) => {
         if(logchannel){
             const embed = new Discord.MessageEmbed()
                 .setAuthor(`${member.user.tag} left the server`)
-                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.toString()? member.toString() : member.user.tag} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
+                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.user.tag} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
                 .setThumbnail(member.user.avatarURL())
                 .setColor("DARK_RED")
                 .setFooter("guildmemberremove.logs.valkyrie")
