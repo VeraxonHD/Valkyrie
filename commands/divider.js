@@ -12,6 +12,8 @@ exports.execute = async (interaction) => {
     //Database Retrieval
     const Dividers = main.getDividersTable();
 
+    if(!member.permissions.has("MANAGE_ROLES")){ return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_ROLES") }
+
     var subcommand = args[0];
     if(subcommand.name == "add"){
         var dividerRole = subcommand.options[0].role;
