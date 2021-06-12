@@ -7,7 +7,7 @@ exports.execute = async (interaction) => {
 
     //Dependencies
     const main = require("../main.js");
-    const logs = require("../util/logFunctions.js");
+    const { Op } = require("sequelize");
 
     //Database Retrieval
     const Dividers = main.getDividersTable();
@@ -26,6 +26,16 @@ exports.execute = async (interaction) => {
             topRoleID: topRole.id,
             bottomRoleID: bottomRole.id
         }).then(()=>{
+            guild.members.cache.each(gMember => {
+                if(!gMember.roles.cache.has(dividerRole.id)){
+                    gMember.roles.cache.each(mRole => {
+                        if(mRole.position >= bottomRole.position && mRole.position <= topRole.position){
+                            //console.log(`Member ${gMember.user.tag} did not have the divider role. Adding...`)
+                            gMember.roles.add(dividerRole);
+                        }
+                    })
+                }
+            })
             return interaction.reply("Successfully create an auto-divider.")
         })
     }else if(subcommand.name == "remove"){
@@ -35,6 +45,12 @@ exports.execute = async (interaction) => {
                 return interaction.reply("Could not find a divider applied to that role")
             }else{
                 divider.destroy().then(() =>{
+                    guild.members.cache.each(gMember => {
+                        if(gMember.roles.cache.has(dividerRole.id)){
+                            //console.log(`Member ${gMember.user.tag} has divider role. Removing...`)
+                            gMember.roles.remove(dividerRole);
+                        }
+                    })
                     return interaction.reply("Deleted divider successfully.")
                 })
             }
