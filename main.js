@@ -164,22 +164,6 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
         defaultValue: {}
     }
 })
-const Warns = sequelize.define("Warns", {
-    guildID: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    memberID: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    moderatorID: {
-        type: DataTypes.STRING
-    },
-    reason: {
-        type: DataTypes.STRING
-    }
-});
 const Tags = sequelize.define("Tags", {
     guildID: {
         type: DataTypes.STRING,
@@ -318,9 +302,6 @@ exports.getGuildUsersTable = () =>{
 exports.getReactionRolesTable = () =>{
     return ReactionRoles;
 }
-exports.getWarnsTable = () =>{
-    return Warns;
-}
 exports.getTagsTable = () =>{
     return Tags;
 }
@@ -388,7 +369,6 @@ client.on("ready", async () =>{
     await GuildUsers.sync();
     await ReactionRoles.sync();
     await Mutes.sync();
-    await Warns.sync();
     await Tags.sync();
     await Lobbies.sync();
     await LobbyHubs.sync();
