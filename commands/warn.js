@@ -10,10 +10,10 @@ exports.execute = async (interaction) => {
     const logs = require("../util/logFunctions.js");
 
     //Database Retrieval
-    const Warns = main.getWarnsTable();
     const Users = main.getUsersTable();
     const GuildUsers = main.getGuildUsersTable();
     const Configs = main.getConfigsTable();
+    const Infractions = main.getInfractionsTable();
 
     if(member.permissions.has("MANAGE_MESSAGES") == false){
         return interaction.reply("Code 103 - Invalid Permissions.");
@@ -31,11 +31,12 @@ exports.execute = async (interaction) => {
     });
 
     guild.members.fetch(targetID).then(async targetMember => {
-        Warns.create({
+        Infractions.create({
             guildID: guild.id,
-            memberID: targetID,
-            moderatorID: member.id,
-            reason: reason
+            userID: targetID,
+            type: 0,
+            reason: reason,
+            moderatorID: member.id
         }).then(async () => {
             const guildUserCompositeKey = guild.id + targetMember.id;
             interaction.reply(`**${targetMember.displayName}** has been warned. Reason: **${reason}**.`);

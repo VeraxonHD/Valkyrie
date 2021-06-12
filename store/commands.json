@@ -638,5 +638,133 @@
                 ]
             }
         ]
+    },
+    {
+        "name": "divider",
+        "description": "Automatically add and remove roles if the member has roles within a certain range.",
+        "options": [
+            {
+                "name": "add",
+                "description": "Register a new auto-divider",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "divider-role",
+                        "description": "The role to apply to the user",
+                        "type": "ROLE",
+                        "required": true
+                    },
+                    {
+                        "name": "top-role",
+                        "description": "The role at the top of the range",
+                        "type": "ROLE",
+                        "required": true
+                    },
+                    {
+                        "name": "bottom-role",
+                        "description": "The role at the bottom of the range",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "remove",
+                "description": "Un-register a new auto-divider",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "divider-role",
+                        "description": "The role to un-register",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "infraction",
+        "description": "List or rescind a user's infractions",
+        "options": [
+            {
+                "name": "list",
+                "description": "List a user's infractions, by type",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "user",
+                        "description": "List a user by User ID",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "userid",
+                                "description": "The Users Unique Snowflake ID",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "mention",
+                        "description": "List a user my mention",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "member",
+                                "description": "The Users @Mention",
+                                "type": "USER",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "revoke",
+                "description": "Revoke an infraction from a user.",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "user",
+                        "description": "Select by User ID",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "userid",
+                                "description": "The Users Unique Snowflake ID",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "infractionid",
+                                "description": "The ID of the Infraction",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "mention",
+                        "description": "Select a user my mention",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "member",
+                                "description": "The Users @Mention",
+                                "type": "USER",
+                                "required": true
+                            },
+                            {
+                                "name": "infractionid",
+                                "description": "The ID of the Infraction",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 ]

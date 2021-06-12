@@ -1,6 +1,6 @@
 {
   "name": "valkyrie",
-  "version": "2.6.1",
+  "version": "3.0.0",
   "description": "A new form of Discord Moderation Bot",
   "main": "main.js",
   "dependencies": {

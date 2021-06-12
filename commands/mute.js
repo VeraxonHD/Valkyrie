@@ -15,6 +15,7 @@ exports.execute = async (interaction) => {
     const GuildUsers = main.getGuildUsersTable();
     const Configs = main.getConfigsTable();
     const Mutes = main.getMutesTable();
+    const Infractions = main.getInfractionsTable();
 
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
@@ -59,6 +60,13 @@ exports.execute = async (interaction) => {
                         var guildUserCompositeKey = guild.id + targetID
                         Users.increment("globalMuteCount",{where:{userID: targetID}});
                         GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
+                        Infractions.create({
+                            guildID: guild.id,
+                            userID: targetID,
+                            type: 1,
+                            reason: reason,
+                            moderatorID: member.id
+                        });
                     }).catch(e => {
                         interaction.reply("Code 110 - Unknown Error with Database.");
                         console.log(e);

@@ -84,9 +84,17 @@ exports.execute = (interaction) =>{
                                 }
                                 ReactionRoles.update({reactions: rrData}, {where: {messageID: rrMessage.id}});
                                 interaction.reply("Added a new reaction role to message successfully.");
+                            }).catch(err => {
+                                return interaction.reply("The supplied emoji is invalid. This may be caused either by the emoji being from a server of which I am not a member, or it's a default emoji.");
                             })
+                        }else{
+                            return interaction.reply("That role does not exist. Please try again later.");
                         }
+                    }else{
+                        return interaction.reply("The supplied emoji is invalid. This may be caused either by the emoji being from a server of which I am not a member, or it's a default emoji.");
                     }
+                }else{
+                    return interaction.reply("That message ID is not valid.");
                 }
             })
         })

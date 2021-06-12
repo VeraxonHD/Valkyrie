@@ -13,6 +13,7 @@ exports.execute = async (interaction) => {
     const Users = main.getUsersTable();
     const GuildUsers = main.getGuildUsersTable();
     const Configs = main.getConfigsTable();
+    const Infractions = main.getInfractionsTable();
 
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
@@ -39,6 +40,13 @@ exports.execute = async (interaction) => {
                     var guildUserCompositeKey = guild.id + targetID
                     Users.increment("globalBanCount",{where:{userID: targetID}});
                     GuildUsers.increment("guildBanCount",{where:{guildUserID: guildUserCompositeKey}});
+                    Infractions.create({
+                        guildID: guild.id,
+                        userID: targetID,
+                        type: 3,
+                        reason: reason,
+                        moderatorID: member.id
+                    });
                 }).catch(e => {
                     console.log(e);
                     return interaction.reply("Code 110 - Database Error - could not find a config record for this guild..");
