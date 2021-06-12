@@ -393,6 +393,20 @@ client.on("ready", async () =>{
     /* await testguild.commands.create(infractioncmd).then(newcmd => {
         console.log(newcmd.name + " " + newcmd.id)
     }) */
+
+    Warns.findAll().then(warns => {
+        warns.forEach(warn =>{
+            Infractions.create({
+                guildID: warn.guildID,
+                userID: warn.memberID,
+                type: 0,
+                reason: warn.reason,
+                moderatorID: warn.moderatorID,
+                createdAt: warn.createdAt,
+                updatedAt: warn.updatedAt
+            }).then(()=>{warn.destroy()})
+        });
+    })
 });
 
 /**
