@@ -828,6 +828,7 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
 
     if((oldMember && newMember) && (oldMember.roles != newMember.roles)){
         const diff = oldMember.roles.cache.difference(newMember.roles.cache).first();
+        if(!diff){ return }
         if(oldMember.roles.cache.has(diff.id) && !newMember.roles.cache.has(diff.id)){
             Dividers.findAll({where: {guildID: guild.id}}).then(dividers =>{
                 dividers.forEach(divider => {
@@ -868,10 +869,6 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
         if(!logchannel){
             return;
         }else{
-            const diff = oldMember.roles.cache.difference(newMember.roles.cache).first();
-            if(!diff){
-                return;
-            }
             const role = guild.roles.cache.get(diff.id)
             if(!role){
                 return;
