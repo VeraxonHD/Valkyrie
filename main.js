@@ -594,6 +594,19 @@ client.on("message", async (message) =>{
                     }
                 }
             });
+        }else if(message.content.startsWith(sysConfig.prefix)){
+            const args = message.content.slice(sysConfig.prefix.length).split(" ");
+            const commandName = args.shift().toLowerCase();
+            var cmdFile = require(`./commands/${commandName}.js`);
+            if(!cmdFile){
+                return;
+            }else{
+                try{
+                    cmdFile.execute(message, args);
+                }catch(e){
+                    console.log(e);
+                }
+            }
         }
     }else{
         return;
