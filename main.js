@@ -285,6 +285,22 @@ const Dividers = sequelize.define("Dividers", {
         allowNull: false
     }
 })
+const Blacklists = sequelize.define("Blacklists", {
+    blacklistID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    phrase: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -316,6 +332,9 @@ exports.getInfractionsTable = () =>{
 }
 exports.getDividersTable = () =>{
     return Dividers;
+}
+exports.getBlacklistsTable = () => {
+    return Blacklists;
 }
 //Client Getter
 exports.getClient = () =>{
@@ -374,6 +393,7 @@ client.on("ready", async () =>{
     await LobbyHubs.sync();
     await Infractions.sync();
     await Dividers.sync();
+    await Blacklists.sync();
 
     //Set Presence
     //client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
@@ -522,6 +542,7 @@ client.on("guildCreate", async (guild) =>{
  * @param message - The message object
  */
 client.on("message", async (message) =>{
+    if(message.author.id == client.user.id){ return }
     if(message.channel.type === "text" && message.author.id != client.user.id){
         var guildUserCompositeKey = message.guild.id + message.author.id;
         Users.findOne({where: {userID: message.author.id}}).then(user => {
@@ -557,57 +578,83 @@ client.on("message", async (message) =>{
                 GuildUsers.increment('guildMsgCount', {where: {guildUserID: guildUserCompositeKey}});
             }
         });
-        if(message.content.startsWith('$')){
-            var tagFromMsg = message.content.split('$')[1].split(' ')[0];
-            Tags.findOne({where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}}).then(tag =>{
-                if(tag){
-                    var channelAccess, roleAccess, memberAccess = false;
-
-                    if(tag.access.channels.includes(message.channel.id) || tag.access.channels.length == 0){
-                        channelAccess = true;
-                    }
-
-                    if(tag.access.roles.length == 0){
-                        roleAccess = true;
-                    }else{
-                        tag.access.roles.forEach(role =>{
-                            if(message.member.roles.cache.has(role)){
-                                roleAccess = true;
-                                return;
-                            }
-                        });
-                    }
-
-                    if(tag.access.members.includes(message.member.id) || tag.access.members.length == 0){
-                        memberAccess = true;
-                    }
-
-                    if(channelAccess && roleAccess && memberAccess){
-                        var response = tag.response;
-                        
-                        response = response.replace(/%AUTH/g, message.member.displayName);
-                        response = response.replace(/%CHAN/g, message.channel.name);
-                        response = response.replace(/%GULD/g, message.guild.name);
-
-                        Tags.increment('uses', {where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}});
-                        return message.channel.send(response);
-                    }
+        if(message.content.length > 0){
+            Blacklists.findAll({where: {guildID: message.guild.id}}).then(async blacklist => {
+                if(blacklist.length != 0){
+                    blacklist.forEach(async blacklistItem => {
+                        if(message.content.indexOf(blacklistItem.phrase) != -1){
+                            message.reply("Your message contained a phrase on this Guild's blacklist. The message has been deleted.").then(async () => {
+                                Infractions.create({
+                                    guildID: message.guild.id,
+                                    userID: message.author.id,
+                                    type: 0,
+                                    reason: "Use of a blacklisted word/phrase",
+                                    moderatorID: client.user.id
+                                })
+                                var logchannel = await common.getLogChannel(message.guild.id);
+                                if(logchannel){
+                                    await logchannel.send(await logs.logWarn(message.author.id, "Use of a blacklisted word/phrase", client.user.id, message.guild));
+                                }                              
+                                return message.delete();
+                            })
+                        }
+                    })
                 }
-            });
-        }else if(message.content.startsWith(sysConfig.prefix)){
-            const args = message.content.slice(sysConfig.prefix.length).split(" ");
-            const commandName = args.shift().toLowerCase();
-            var cmdFile = require(`./commands/${commandName}.js`);
-            if(!cmdFile){
-                return;
-            }else{
-                try{
-                    cmdFile.execute(message, args);
-                }catch(e){
-                    console.log(e);
+            })
+            if(message.content.startsWith('$')){
+                var tagFromMsg = message.content.split('$')[1].split(' ')[0];
+                Tags.findOne({where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}}).then(tag =>{
+                    if(tag){
+                        var channelAccess, roleAccess, memberAccess = false;
+    
+                        if(tag.access.channels.includes(message.channel.id) || tag.access.channels.length == 0){
+                            channelAccess = true;
+                        }
+    
+                        if(tag.access.roles.length == 0){
+                            roleAccess = true;
+                        }else{
+                            tag.access.roles.forEach(role =>{
+                                if(message.member.roles.cache.has(role)){
+                                    roleAccess = true;
+                                    return;
+                                }
+                            });
+                        }
+    
+                        if(tag.access.members.includes(message.member.id) || tag.access.members.length == 0){
+                            memberAccess = true;
+                        }
+    
+                        if(channelAccess && roleAccess && memberAccess){
+                            var response = tag.response;
+                            
+                            response = response.replace(/%AUTH/g, message.member.displayName);
+                            response = response.replace(/%CHAN/g, message.channel.name);
+                            response = response.replace(/%GULD/g, message.guild.name);
+    
+                            Tags.increment('uses', {where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}});
+                            return message.channel.send(response);
+                        }
+                    }
+                });
+            }
+            if(message.content.startsWith(sysConfig.prefix)){
+                const args = message.content.slice(sysConfig.prefix.length).split(" ");
+                const commandName = args.shift().toLowerCase();
+                var cmdFile = require(`./commands/${commandName}.js`);
+                if(!cmdFile){
+                    return;
+                }else{
+                    try{
+                        cmdFile.execute(message, args);
+                    }catch(e){
+                        console.log(e);
+                    }
                 }
             }
         }
+        
     }else{
         return;
     }

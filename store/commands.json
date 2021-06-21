@@ -296,6 +296,44 @@
                         "type": "STRING"
                     }
                 ]
+            },
+            {
+                "name": "blacklist",
+                "description": "Configure Auto-Mod Blacklist Words and Phrases",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "add",
+                        "description": "Add a blacklisted word or phrase",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "phrase",
+                                "description": "The word or phrase to add",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "list",
+                        "description": "List all blacklisted words and phrases",
+                        "type": "SUB_COMMAND"
+                    },
+                    {
+                        "name": "remove",
+                        "description": "Remove a blacklisted word or phrase",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "blacklistid",
+                                "description": "The ID of the word or phrase to remove (see /config blacklist list)",
+                                "type": "INTEGER",
+                                "required": true
+                            }
+                        ]
+                    }
+                ] 
             }
         ]
     },

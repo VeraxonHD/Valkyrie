@@ -8,9 +8,11 @@ exports.execute = (interaction) => {
     //Dependencies
     const main = require("../main.js");
     const logs = require("../util/logFunctions.js");
+    const { Op } = require("sequelize");
 
     //Database Retrieval
     const Configs = main.getConfigsTable();
+    const Blacklists = main.getBlacklistsTable();
 
     if(args == null){
         return interaction.reply("Code 101 - No Arguments Supplied.");
@@ -69,6 +71,50 @@ exports.execute = (interaction) => {
                     })
                 }
             })
+        }else if(conVar == "blacklist"){
+            var subConVar = args[0].options[0].name
+            if(subConVar == "add"){
+                var subValue = args[0].options[0].options[0].value
+
+                Blacklists.findOne({where: {[Op.and]: [{guildID: guild.id}, {phrase: subValue}]}}).then(blacklistItem => {
+                    if(blacklistItem){
+                        return interaction.reply("That phrase is already in the blacklist for this guild!");
+                    }else{
+                        Blacklists.create({
+                            guildID: guild.id,
+                            phrase: subValue
+                        }).then(() =>{
+                            return interaction.reply(`Added "**${subValue}**" to the guild blacklist.`);
+                        }).catch(err => {
+                            console.log(err);
+                            return interaction.reply("Code 110 - Unknown Database Error. Could not write to Blacklists table");
+                        })
+                    }
+                }) 
+            }else if(subConVar == "list"){
+                Blacklists.findAll({where: {guildID: guild.id}}).then(blacklist => {
+                    if(blacklist.length == 0){
+                        return interaction.reply("There are no blacklisted phrases on this Guild.");
+                    }else{
+                        const blacklistStringify = [];
+                        blacklist.forEach(item => {
+                            blacklistStringify.push(`**ID**: ${item.blacklistID} | **Phrase**: ${item.phrase}\n`);
+                        })
+                        return interaction.reply(blacklistStringify);
+                    }
+                })
+            }else if(subConVar == "remove"){
+                var subValue = args[0].options[0].options[0].value
+
+                Blacklists.findOne({where: {[Op.and]: [{guildID: guild.id}, {blacklistID: subValue}]}}).then(blacklistItem => {
+                    if(!blacklistItem){
+                        return interaction.reply("That blacklist item does not exist on this Guild.");
+                    }else{
+                        blacklistItem.destroy();
+                        return interaction.reply(`Successfully deleted item ${blacklistItem.blacklistID} - ${blacklistItem.phrase} from the blacklist.`);
+                    }
+                })
+            }
         }
     }
 }
