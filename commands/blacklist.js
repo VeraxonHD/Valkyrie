@@ -14,6 +14,10 @@ exports.execute = (interaction) => {
     //Database Retrieval
     const Blacklists = main.getBlacklistsTable();
     const BlacklistExemptions = main.getBlacklistExemptionsTable();
+
+    if(!member.permissions.has("MANAGE_MESSAGES")){
+        return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES");
+    }
     
     var subcommand = args[0].name
     if(subcommand == "add"){
