@@ -296,44 +296,6 @@
                         "type": "STRING"
                     }
                 ]
-            },
-            {
-                "name": "blacklist",
-                "description": "Configure Auto-Mod Blacklist Words and Phrases",
-                "type": "SUB_COMMAND_GROUP",
-                "options": [
-                    {
-                        "name": "add",
-                        "description": "Add a blacklisted word or phrase",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "phrase",
-                                "description": "The word or phrase to add",
-                                "type": "STRING",
-                                "required": true
-                            }
-                        ]
-                    },
-                    {
-                        "name": "list",
-                        "description": "List all blacklisted words and phrases",
-                        "type": "SUB_COMMAND"
-                    },
-                    {
-                        "name": "remove",
-                        "description": "Remove a blacklisted word or phrase",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "blacklistid",
-                                "description": "The ID of the word or phrase to remove (see /config blacklist list)",
-                                "type": "INTEGER",
-                                "required": true
-                            }
-                        ]
-                    }
-                ] 
             }
         ]
     },
@@ -800,6 +762,396 @@
                                 "required": true
                             }
                         ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "blacklist",
+        "description": "Configure Auto-Mod Blacklist Words and Phrases",
+        "options": [
+            {
+                "name": "add",
+                "description": "Add a blacklisted word or phrase",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "phrase",
+                        "description": "The word or phrase to add",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "list",
+                "description": "List all blacklisted words and phrases",
+                "type": "SUB_COMMAND"
+            },
+            {
+                "name": "remove",
+                "description": "Remove a blacklisted word or phrase",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "blacklistid",
+                        "description": "The ID of the word or phrase to remove (see /config blacklist list)",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "exempt",
+                "description": "Add or remove an exempt user",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "add",
+                        "description": "Add an exempt user",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "user",
+                                "description": "The user to add",
+                                "type": "USER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "remove",
+                        "description": "Remove an exempt user",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "user",
+                                "description": "The user to remove",
+                                "type": "USER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "list",
+                        "description": "Add an exempt user",
+                        "type": "SUB_COMMAND"
+                    }
+                ]
+            },
+            {
+                "name": "automod",
+                "description": "Enable or Disable automated punishments for a certain blacklist item",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "set",
+                        "description": "Set the blacklist automod rule",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "blacklistid",
+                                "description": "ID of the blacklist item - use /blacklist list",
+                                "type": "INTEGER",
+                                "required": true
+                            },
+                            {
+                                "name": "action",
+                                "description": "The action type you wish to enable",
+                                "type": "INTEGER",
+                                "choices": [
+                                    {
+                                        "name": "Warn",
+                                        "value": 0
+                                    },
+                                    {
+                                        "name": "Mute",
+                                        "value": 1
+                                    },
+                                    {
+                                        "name": "Kick",
+                                        "value": 2
+                                    },
+                                    {
+                                        "name": "Ban",
+                                        "value": 3
+                                    }
+                                ],
+                                "required": true
+                            },
+                            {
+                                "name": "muteduration",
+                                "description": "If you chose mute, please provide a duration. Use the same format as /mute",
+                                "type": "STRING",
+                                "required": false
+                            }
+                        ]
+                    },
+                    {
+                        "name": "remove",
+                        "description": "Remove an existing blacklist automod rule",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "blacklistid",
+                                "description": "ID of the blacklist item - use /blacklist list",
+                                "type": "INTEGER",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ] 
+    },
+    {
+        "name": "antispam",
+        "description": "Configure anti-spam options",
+        "options": [
+            {
+                "name": "warnthreshold",
+                "description": "Amount of messages sent in a row that will cause a warning.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "kickthreshold",
+                "description": "Amount of messages sent in a row that will cause a kick.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "mutethreshold",
+                "description": "Amount of messages sent in a row that will cause a mute.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "banthreshold",
+                "description": "Amount of messages sent in a row that will cause a ban.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "maxinterval",
+                "description": "Maximum time (milliseconds) inbetween *different* messages that constitutes action.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "maxduplicatesinterval",
+                "description": "Maximum time (milliseconds) inbetween *identical* messages that constitutes action.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "maxduplicateswarn",
+                "description": "Amount of identical messages sent in a row that will cause a warning.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "maxduplicateskick",
+                "description": "Amount of identical messages sent in a row that will cause a kick.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "maxduplicatesmute",
+                "description": "Amount of identical messages sent in a row that will cause a mute.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "maxduplicatesban",
+                "description": "Amount identical of messages sent in a row that will cause a ban.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "value",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "warnenabled",
+                "description": "Whether or not warns are enabled as a punishment.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "enabled",
+                        "description": "The new value",
+                        "type": "BOOLEAN",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "kickenabled",
+                "description": "Whether or not kicks are enabled as a punishment.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "enabled",
+                        "description": "The new value",
+                        "type": "BOOLEAN",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "muteenabled",
+                "description": "Whether or not mutes are enabled as a punishment.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "enabled",
+                        "description": "The new value",
+                        "type": "BOOLEAN",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "banenabled",
+                "description": "Whether or not bans are enabled as a punishment.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "enabled",
+                        "description": "The new value",
+                        "type": "BOOLEAN",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "removebotmessages",
+                "description": "Whether or not to remove bot messages after a punishment.",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "enabled",
+                        "description": "The new value",
+                        "type": "BOOLEAN",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "removebotmessagesafter",
+                "description": "How long after bot message to clean it up (milliseconds).",
+                "type": "SUB_COMMAND",
+                "options":[
+                    {
+                        "name": "time",
+                        "description": "The new value",
+                        "type": "INTEGER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "exempt",
+                "description": "Add or remove an exempt user",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "add",
+                        "description": "Add an exempt user",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "user",
+                                "description": "The user to add",
+                                "type": "USER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "remove",
+                        "description": "Remove an exempt user",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "user",
+                                "description": "The user to remove",
+                                "type": "USER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "list",
+                        "description": "Add an exempt user",
+                        "type": "SUB_COMMAND"
                     }
                 ]
             }

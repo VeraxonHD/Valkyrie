@@ -299,6 +299,24 @@ const Blacklists = sequelize.define("Blacklists", {
     phrase: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    automodRule:{
+        type: DataTypes.INTEGER,
+        defaultValue: null
+    },
+    automodOptions:{
+        type: DataTypes.JSON,
+        defaultValue: {}
+    }
+})
+const BlacklistExemptions = sequelize.define("BlacklistExemptions", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    userID: {
+        type: DataTypes.STRING,
+        allowNull: false
     }
 })
 
@@ -336,6 +354,9 @@ exports.getDividersTable = () =>{
 exports.getBlacklistsTable = () => {
     return Blacklists;
 }
+exports.getBlacklistExemptionsTable = () => {
+    return BlacklistExemptions;
+}
 //Client Getter
 exports.getClient = () =>{
     return client;
@@ -372,15 +393,15 @@ client.setInterval(async () => {
 }, 2000);
 
 /**==============
- * Event Handlers
- ==============*/
+* Event Handlers
+==============*/
 
 /**
- * 'ready' event - Called when bot is connected to the API.
- */
+* 'ready' event - Called when bot is connected to the API.
+*/
 client.on("ready", async () =>{
     console.log("Bot Loaded.");
-
+    
     //Sync Database Tables
     await Configs.sync();
     await Mutes.sync();
@@ -394,7 +415,8 @@ client.on("ready", async () =>{
     await Infractions.sync();
     await Dividers.sync();
     await Blacklists.sync();
-
+    await BlacklistExemptions.sync();
+    
     //Set Presence
     //client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
     client.user.setActivity(`Ver ${package.version} | Serving ${client.users.cache.size} members on ${client.guilds.cache.size} guilds`, {type: "PLAYING"})
@@ -408,7 +430,7 @@ client.on("ready", async () =>{
             console.log(`Registered new command ${commands[command].name} successfully.`)
         }).catch(e => {console.error(e)});
     } */
-
+    
     var testguild = client.guilds.cache.get("409365548766461952");
     /* await testguild.commands.create(infractioncmd).then(newcmd => {
         console.log(newcmd.name + " " + newcmd.id)
@@ -416,9 +438,9 @@ client.on("ready", async () =>{
 });
 
 /**
- * 'interactionCreate' - Called when a user runs a slash-command.
- * @param interaction - The interaction object from the API
- */
+* 'interactionCreate' - Called when a user runs a slash-command.
+* @param interaction - The interaction object from the API
+*/
 client.on("interaction", (interaction) =>{
     var cmdFile = require(`./commands/${interaction.commandName}.js`);
     if(!cmdFile){
@@ -433,13 +455,13 @@ client.on("interaction", (interaction) =>{
 });
 
 /**
- * 'guildCreate' - Called when joining a new Guild
- * @param guild - The guild object from the API
- */
+* 'guildCreate' - Called when joining a new Guild
+* @param guild - The guild object from the API
+*/
 client.on("guildCreate", async (guild) =>{
     var mutedRoleExists = true;
     var logChannelExists = true;
-
+    
     Configs.create({
         guildID: guild.id,
         ownerID: guild.ownerID,
@@ -457,7 +479,7 @@ client.on("guildCreate", async (guild) =>{
         })
     }
     ).catch(console.log)
-
+    
     var mutedRole = guild.roles.cache.find(r => r.name.toLowerCase() == "muted");
     //Find or Create a 'Muted' Role.
     if(!mutedRole){
@@ -488,7 +510,7 @@ client.on("guildCreate", async (guild) =>{
             //return channel.send("Code 110 - Unknown Error with Database.");
         })
     }
-
+    
     var logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === "logchannel");
     if(!logChannel){
         try{
@@ -519,28 +541,28 @@ client.on("guildCreate", async (guild) =>{
             //return channel.send("Code 110 - Unknown Error with Database.");
         })
     }
-
+    
     const embed = new Discord.MessageEmbed()
-        .setColor("GREEN")
-        .setTimestamp(Date.now())
-        .setAuthor("Welcome to the Valkyrie family!")
-        .addField("Support Discord", "Need help? Join https://discord.gg/NvqK5W9");
+    .setColor("GREEN")
+    .setTimestamp(Date.now())
+    .setAuthor("Welcome to the Valkyrie family!")
+    .addField("Support Discord", "Need help? Join https://discord.gg/NvqK5W9");
     if(mutedRoleExists == false){
         embed.addField("I couldn't find or create a muted role", "If you already have one, use `/config muterole` to change the server config");
     }
     if(logChannelExists == false){
         embed.addField("I couldn't find or create a log channel", "If you already have one, use `/config logchannel` to change the server config");
     }
-
+    
     guild.members.fetch(guild.ownerID).then(guildOwner =>{
         guildOwner.send({embed})
     });
 })
 
 /**
- * 'message' - Called when a message is sent in a monitored Guild
- * @param message - The message object
- */
+* 'message' - Called when a message is sent in a monitored Guild
+* @param message - The message object
+*/
 client.on("message", async (message) =>{
     if(message.author.id == client.user.id){ return }
     if(message.channel.type === "text" && message.author.id != client.user.id){
@@ -584,17 +606,87 @@ client.on("message", async (message) =>{
                     blacklist.forEach(async blacklistItem => {
                         if(message.content.indexOf(blacklistItem.phrase) != -1){
                             message.reply("Your message contained a phrase on this Guild's blacklist. The message has been deleted.").then(async () => {
-                                Infractions.create({
-                                    guildID: message.guild.id,
-                                    userID: message.author.id,
-                                    type: 0,
-                                    reason: "Use of a blacklisted word/phrase",
-                                    moderatorID: client.user.id
-                                })
                                 var logchannel = await common.getLogChannel(message.guild.id);
-                                if(logchannel){
-                                    await logchannel.send(await logs.logWarn(message.author.id, "Use of a blacklisted word/phrase", client.user.id, message.guild));
-                                }                              
+                                
+                                switch (blacklistItem.automodRule) {
+                                    case 0:
+                                        Infractions.create({
+                                            guildID: message.guild.id,
+                                            userID: message.author.id,
+                                            type: 0,
+                                            reason: "Use of a blacklisted word/phrase - automod warn action",
+                                            moderatorID: client.user.id
+                                        });
+                                        if(logchannel){
+                                            await logchannel.send(await logs.logWarn(message.author.id, "Use of a blacklisted word/phrase - automod warn action", client.user.id, message.guild));
+                                        } 
+                                        break;
+                                    case 1:
+                                        var mutedRole;
+                                        await Configs.findOne({where: {guildID: message.guild.id}}).then(async guildConfig =>{
+                                            mutedRole = message.guild.roles.cache.get(guildConfig.mutedRoleID);
+                                        })
+                                        if(mutedRole){
+                                            message.member.roles.add(mutedRole).then(() => {
+                                                const duration = blacklistItem.automodOptions.muteduration;
+                                                Mutes.create({
+                                                    guildID: message.guild.id,
+                                                    memberID: message.author.id,
+                                                    endsAt: Date.now() + ms(duration),
+                                                    reason: "Use of a blacklisted word/phrase - automod mute action"
+                                                }).then(async ()=>{
+                                                    Users.increment("globalMuteCount",{where:{userID: message.author.id}});
+                                                    GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
+                                                    
+                                                    Infractions.create({
+                                                        guildID: message.guild.id,
+                                                        userID: message.author.id,
+                                                        type: 1,
+                                                        reason: "Use of a blacklisted word/phrase - automod mute action",
+                                                        moderatorID: client.user.id
+                                                    });
+                                                    
+                                                    if(logchannel){
+                                                        await logchannel.send(await logs.logMute(message.author.id, "Use of a blacklisted word/phrase - automod mute action", duration, client.user.id, message.guild));
+                                                    } 
+                                                }).catch(e => {
+                                                    console.log(e);
+                                                });
+                                            }) 
+                                        }
+                                        break;
+                                    case 2:
+                                        message.member.kick("Use of a blacklisted word/phrase - automod kick action").then(async () => {
+                                            Infractions.create({
+                                                guildID: message.guild.id,
+                                                userID: message.author.id,
+                                                type: 2,
+                                                reason: "Use of a blacklisted word/phrase - automod kick action",
+                                                moderatorID: client.user.id
+                                            });
+                                            if(logchannel){
+                                                await logchannel.send(await logs.logKick(message.author.id, "Use of a blacklisted word/phrase - automod kick action", client.user.id, message.guild));
+                                            } 
+                                        });
+                                        
+                                        break;
+                                    case 3:
+                                        message.member.ban({days: 7, reason: "Use of a blacklisted word/phrase - automod kick action"}).then(async () => {
+                                            Infractions.create({
+                                                guildID: message.guild.id,
+                                                userID: message.author.id,
+                                                type: 2,
+                                                reason: "Use of a blacklisted word/phrase - automod kick action",
+                                                moderatorID: client.user.id
+                                            });
+                                            if(logchannel){
+                                                await logchannel.send(await logs.logBan(message.author.id, "Use of a blacklisted word/phrase - automod ban action", client.user.id, message.guild));
+                                            } 
+                                        });
+                                        break;
+                                    default:
+                                        break;
+                                }                    
                                 return message.delete();
                             })
                         }
@@ -606,11 +698,11 @@ client.on("message", async (message) =>{
                 Tags.findOne({where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}}).then(tag =>{
                     if(tag){
                         var channelAccess, roleAccess, memberAccess = false;
-    
+                        
                         if(tag.access.channels.includes(message.channel.id) || tag.access.channels.length == 0){
                             channelAccess = true;
                         }
-    
+                        
                         if(tag.access.roles.length == 0){
                             roleAccess = true;
                         }else{
@@ -621,18 +713,18 @@ client.on("message", async (message) =>{
                                 }
                             });
                         }
-    
+                        
                         if(tag.access.members.includes(message.member.id) || tag.access.members.length == 0){
                             memberAccess = true;
                         }
-    
+                        
                         if(channelAccess && roleAccess && memberAccess){
                             var response = tag.response;
                             
                             response = response.replace(/%AUTH/g, message.member.displayName);
                             response = response.replace(/%CHAN/g, message.channel.name);
                             response = response.replace(/%GULD/g, message.guild.name);
-    
+                            
                             Tags.increment('uses', {where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}});
                             return message.channel.send(response);
                         }
@@ -661,22 +753,22 @@ client.on("message", async (message) =>{
 });
 
 /**
- * 'messageReactionAdd' - Called when a reaction is added to a message
- * @param messageReaction - the reaction object
- * @param user - the user that reacted
- */
- client.on("messageReactionAdd", async (messageReaction, user) => {
-
+* 'messageReactionAdd' - Called when a reaction is added to a message
+* @param messageReaction - the reaction object
+* @param user - the user that reacted
+*/
+client.on("messageReactionAdd", async (messageReaction, user) => {
+    
     if(user.id === client.user.id) return;
-
+    
     if(messageReaction.message.partial) await messageReaction.message.fetch();
     var message = messageReaction.message;
     var emojiID = messageReaction.emoji.id;
-
+    
     ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
         if(!row) return;
         var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
-
+        
         try{
             message.guild.members.fetch(user.id).then(member =>{
                 member.roles.add(role);
@@ -688,22 +780,22 @@ client.on("message", async (message) =>{
 });
 
 /**
- * 'messageReactionRemove' - Called when a reaction is removed from a message
- * @param messageReaction - the reaction object
- * @param user - the user that reacted
- */
+* 'messageReactionRemove' - Called when a reaction is removed from a message
+* @param messageReaction - the reaction object
+* @param user - the user that reacted
+*/
 client.on("messageReactionRemove", async (messageReaction, user) => {
-
+    
     if(user.id === client.user.id) return;
-
+    
     if(messageReaction.message.partial) await messageReaction.message.fetch();
     var message = messageReaction.message;
     var emojiID = messageReaction.emoji.id;
-
+    
     ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
         if(!row) return;
         var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
-
+        
         try{
             message.guild.members.fetch(user.id).then(member =>{
                 member.roles.remove(role);
@@ -715,22 +807,26 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
 });
 
 /**
- * 'messageDelete' - Called when a message is deleted
- * @param message - The message object
- */
+* 'messageDelete' - Called when a message is deleted
+* @param message - The message object
+*/
 client.on("messageDelete", async (message) =>{
     if(message.partial){
         return;
     }
-
+    
     const guild = message.guild;
     const member = message.member;
 
+    if(!member || !guild){
+        return;
+    }
+    
     const enabled = await common.getLogTypeState(guild.id, "messagedelete");
     if(enabled == false){
         return;
     }
-
+    
     const logchannel = await common.getLogChannel(guild.id);
     if(!logchannel){
         return;
@@ -741,37 +837,37 @@ client.on("messageDelete", async (message) =>{
                 attachments.push(attachment.proxyURL)
             })
         }
-    
+        
         const embed = new Discord.MessageEmbed()
             .setAuthor(`${member.displayName}'s message was deleted`)
             .addField("Message Data", `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
             .setColor("RED")
             .setFooter("messagedelete.logs.valkyrie")
             .setTimestamp(new Date());
-    
-            if(message.content){
-                embed.addField("Message Content", message.content)
-            }
-            if(attachments.length != 0){
-                embed.addField("Message Attachment URLs", attachments)
-            }
-            
+        
+        if(message.content){
+            embed.addField("Message Content", message.content)
+        }
+        if(attachments.length != 0){
+            embed.addField("Message Attachment URLs", attachments)
+        }
+        
         return logchannel.send({embed});
     }
 });
 
 /**
- * 'messageUpdate' - Called when a message is edited
- * @param oldMessage - old message object
- * @param newMessage - new message object
- */
+* 'messageUpdate' - Called when a message is edited
+* @param oldMessage - old message object
+* @param newMessage - new message object
+*/
 client.on("messageUpdate", async (oldMessage, newMessage) =>{
     if(newMessage.partial) await newMessage.fetch();
     if(oldMessage.partial) await oldMessage.fetch();
-
+    
     const guild = newMessage.guild;
     const member = newMessage.member;
-
+    
     if((newMessage) && (newMessage.content != oldMessage.content)){
         const enabled = await common.getLogTypeState(guild.id, "messageedit");
         if(enabled == false){
@@ -784,26 +880,26 @@ client.on("messageUpdate", async (oldMessage, newMessage) =>{
             const oldContent = oldMessage.content ? oldMessage.content : "Old Message Content was Empty";
             const newContent = newMessage.content ? newMessage.content : "New Message Content is Empty";
             const attachments = [];
-
+            
             if(oldMessage.attachments.size != 0){
                 oldMessage.attachments.each(attachment => {
                     attachments.push(attachment.proxyURL)
                 })
             }
-
+            
             const embed = new Discord.MessageEmbed()
-                .setAuthor(`${member.displayName}'s message was edited`)
-                .addField("Message Data", `**Date/Time**: ${df(oldMessage.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
-                .addField("Old Message Content", oldContent)
-                .addField("New Message Content", newContent)
-                .setColor("ORANGE")
-                .setFooter("messageupdate.logs.valkyrie")
-                .setTimestamp(new Date());
-
-                if(attachments.length != 0){
-                    embed.addField("Message Attachment URLs", attachments)
-                }
-                
+            .setAuthor(`${member.displayName}'s message was edited`)
+            .addField("Message Data", `**Date/Time**: ${df(oldMessage.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
+            .addField("Old Message Content", oldContent)
+            .addField("New Message Content", newContent)
+            .setColor("ORANGE")
+            .setFooter("messageupdate.logs.valkyrie")
+            .setTimestamp(new Date());
+            
+            if(attachments.length != 0){
+                embed.addField("Message Attachment URLs", attachments)
+            }
+            
             return logchannel.send({embed});
         }
     }else{
@@ -812,9 +908,9 @@ client.on("messageUpdate", async (oldMessage, newMessage) =>{
 });
 
 /**
- * 'guildMemberAdd' - Called when a member joins a guild.
- * @param member - the member that joined's object
- */
+* 'guildMemberAdd' - Called when a member joins a guild.
+* @param member - the member that joined's object
+*/
 client.on("guildMemberAdd", async (member) => {
     const guild = member.guild;
     Configs.findOne({where:{guildID: guild.id}}).then(row => {
@@ -825,8 +921,8 @@ client.on("guildMemberAdd", async (member) => {
         }
         if(row.welcomeMessage != null){
             const embed = new Discord.MessageEmbed()
-                .addField(`Welcome to ${guild.name}!`, row.welcomeMessage)
-                .setColor("GREEN");
+            .addField(`Welcome to ${guild.name}!`, row.welcomeMessage)
+            .setColor("GREEN");
             try{
                 member.send({embed});
             }catch(e){
@@ -834,27 +930,27 @@ client.on("guildMemberAdd", async (member) => {
             }
         }
     })
-
+    
     const enabled = await common.getLogTypeState(guild.id, "usermigration");
     if(enabled){
         const logchannel = await common.getLogChannel(guild.id);
         if(logchannel){
             const embed = new Discord.MessageEmbed()
-                .setAuthor(`${member.user.tag} joined the server`)
-                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
-                .setThumbnail(member.user.avatarURL())
-                .setColor("DARK_GREEN")
-                .setFooter("guildmemberadd.logs.valkyrie")
-                .setTimestamp(new Date());
+            .setAuthor(`${member.user.tag} joined the server`)
+            .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
+            .setThumbnail(member.user.avatarURL())
+            .setColor("DARK_GREEN")
+            .setFooter("guildmemberadd.logs.valkyrie")
+            .setTimestamp(new Date());
             logchannel.send({embed});
         }
     }
 });
 
 /**
- * 'guildMemberRemove' - Called when a member leaves a guild.
- * @param member - the member that left's object
- */
+* 'guildMemberRemove' - Called when a member leaves a guild.
+* @param member - the member that left's object
+*/
 client.on("guildMemberRemove", async (member) => {
     const guild = member.guild;
     
@@ -863,29 +959,29 @@ client.on("guildMemberRemove", async (member) => {
         const logchannel = await common.getLogChannel(guild.id);
         if(logchannel){
             const embed = new Discord.MessageEmbed()
-                .setAuthor(`${member.user.tag} left the server`)
-                .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.user.tag} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
-                .setThumbnail(member.user.avatarURL())
-                .setColor("DARK_RED")
-                .setFooter("guildmemberremove.logs.valkyrie")
-                .setTimestamp(new Date());
+            .setAuthor(`${member.user.tag} left the server`)
+            .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${member.user.tag} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
+            .setThumbnail(member.user.avatarURL())
+            .setColor("DARK_RED")
+            .setFooter("guildmemberremove.logs.valkyrie")
+            .setTimestamp(new Date());
             logchannel.send({embed});
         }
     }
 })
 
 /**
- * 'guildMemberUpdate' - called when a member updates
- * @param oldMember - old member object
- * @param newMember - new member object
- */
+* 'guildMemberUpdate' - called when a member updates
+* @param oldMember - old member object
+* @param newMember - new member object
+*/
 client.on("guildMemberUpdate", async (oldMember, newMember) =>{
     if(oldMember.partial) await oldMember.fetch();
     if(newMember.partial) await newMember.fetch();
-
+    
     const guild = newMember.guild;
     const member = newMember;
-
+    
     if((oldMember && newMember) && (oldMember.roles != newMember.roles)){
         const diff = oldMember.roles.cache.difference(newMember.roles.cache).first();
         if(!diff){ return }
@@ -933,47 +1029,47 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
             if(!role){
                 return;
             }
-
+            
             const embed = new Discord.MessageEmbed()
-                .setAuthor(`${member.displayName}'s roles were updated`)
-                .addField("Update Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
-                .setColor("LUMINOUS_VIVID_PINK")
-                .setFooter("roles.guildmemberupdate.logs.valkyrie")
-                .setTimestamp(new Date());
-    
+            .setAuthor(`${member.displayName}'s roles were updated`)
+            .addField("Update Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
+            .setColor("LUMINOUS_VIVID_PINK")
+            .setFooter("roles.guildmemberupdate.logs.valkyrie")
+            .setTimestamp(new Date());
+            
             if(oldMember.roles.cache.has(role.id) && !newMember.roles.cache.has(role.id)){
                 embed.addField("Role Removed", role)
             }else if(!oldMember.roles.cache.has(role.id) && newMember.roles.cache.has(role.id)){
                 embed.addField("Role Added", role)
             }
-    
+            
             logchannel.send({embed});
         }
     }
 })
 
 /**
- * voiceStateUpdate - Called when the voice state event is fired 
- * @param oldState - the old state
- * @param newState - the new state
- */
+* voiceStateUpdate - Called when the voice state event is fired 
+* @param oldState - the old state
+* @param newState - the new state
+*/
 client.on("voiceStateUpdate", async(oldState, newState) =>{
     if(oldState.channel == newState.channel) return;
-
+    
     const guild = newState.guild;
     const member = newState.member;
-
+    
     const enabled = await common.getLogTypeState(guild.id, "messageedit");
     if(enabled == true){
         const logchannel = await common.getLogChannel(guild.id);
         if(logchannel){
             const embed = new Discord.MessageEmbed()
-                .setAuthor(`${member.displayName}'s voice state was updated`)
-                .addField("Voice State Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
-                .setColor("AQUA")
-                .setFooter("voicestateupdate.logs.valkyrie")
-                .setTimestamp(new Date());
-
+            .setAuthor(`${member.displayName}'s voice state was updated`)
+            .addField("Voice State Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
+            .setColor("AQUA")
+            .setFooter("voicestateupdate.logs.valkyrie")
+            .setTimestamp(new Date());
+            
             if(!oldState.channel && newState.channel){ //If a member joins a channel for the first time
                 embed.addField("Member Joined Channel", `**${newState.channel.name}**`)
             }else if((oldState.channel != newState.channel) && (oldState.channel && newState.channel)){ //If a member changes channel
@@ -984,7 +1080,7 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
             logchannel.send({embed});
         }
     }
-
+    
     if(!oldState.channel && newState.channel){ //If a member joins a channel for the first time
         await checkHubThenCreate(newState);
     }else if((oldState.channel != newState.channel) && (oldState.channel && newState.channel)){ //If a member changes channel
@@ -997,14 +1093,14 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
 });
 
 /**========================
- * SUPPLEMENTARY FUNCTIONS
- =========================*/
+* SUPPLEMENTARY FUNCTIONS
+=========================*/
 
 /**
- * checkHubThenCreate - checks if the voice channel joined is a hub channel (and if the user already has a lobby made)
- * According to this check, create a new lobby and move the user
- * @param {*} newState 
- */
+* checkHubThenCreate - checks if the voice channel joined is a hub channel (and if the user already has a lobby made)
+* According to this check, create a new lobby and move the user
+* @param {*} newState 
+*/
 async function checkHubThenCreate(newState){
     var member = newState.member;
     var guild = newState.guild;
@@ -1031,7 +1127,7 @@ async function checkHubThenCreate(newState){
                         }).catch(e =>{
                             return console.error(e);
                         })
-
+                        
                         member.edit({
                             channel: newLobby
                         });
@@ -1044,9 +1140,9 @@ async function checkHubThenCreate(newState){
     })
 }
 /**
- * checkLobbyThenDelete - deletes the lobby if it is empty
- * @param {*} oldState 
- */
+* checkLobbyThenDelete - deletes the lobby if it is empty
+* @param {*} oldState 
+*/
 async function checkLobbyThenDelete(oldState){
     var guild = oldState.guild;
     Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{lobbyID: oldState.channel.id}]}}).then(lobby =>{
