@@ -602,96 +602,100 @@ client.on("message", async (message) =>{
         });
         if(message.content.length > 0){
             Blacklists.findAll({where: {guildID: message.guild.id}}).then(async blacklist => {
-                if(blacklist.length != 0){
-                    blacklist.forEach(async blacklistItem => {
-                        if(message.content.indexOf(blacklistItem.phrase) != -1){
-                            message.reply("Your message contained a phrase on this Guild's blacklist. The message has been deleted.").then(async () => {
-                                var logchannel = await common.getLogChannel(message.guild.id);
-                                
-                                switch (blacklistItem.automodRule) {
-                                    case 0:
-                                        Infractions.create({
-                                            guildID: message.guild.id,
-                                            userID: message.author.id,
-                                            type: 0,
-                                            reason: "Use of a blacklisted word/phrase - automod warn action",
-                                            moderatorID: client.user.id
-                                        });
-                                        if(logchannel){
-                                            await logchannel.send(await logs.logWarn(message.author.id, "Use of a blacklisted word/phrase - automod warn action", client.user.id, message.guild));
-                                        } 
-                                        break;
-                                    case 1:
-                                        var mutedRole;
-                                        await Configs.findOne({where: {guildID: message.guild.id}}).then(async guildConfig =>{
-                                            mutedRole = message.guild.roles.cache.get(guildConfig.mutedRoleID);
-                                        })
-                                        if(mutedRole){
-                                            message.member.roles.add(mutedRole).then(() => {
-                                                const duration = blacklistItem.automodOptions.muteduration;
-                                                Mutes.create({
+                BlacklistExemptions.findOne({where: {[Op.and]: [{guildID: message.guild.id},{userID: message.author.id}]}}).then(async row => {
+                    if(!row){
+                        if(blacklist.length != 0){
+                            blacklist.forEach(async blacklistItem => {
+                                if(message.content.indexOf(blacklistItem.phrase) != -1){
+                                    message.reply("Your message contained a phrase on this Guild's blacklist. The message has been deleted.").then(async () => {
+                                        var logchannel = await common.getLogChannel(message.guild.id);
+                                        
+                                        switch (blacklistItem.automodRule) {
+                                            case 0:
+                                                Infractions.create({
                                                     guildID: message.guild.id,
-                                                    memberID: message.author.id,
-                                                    endsAt: Date.now() + ms(duration),
-                                                    reason: "Use of a blacklisted word/phrase - automod mute action"
-                                                }).then(async ()=>{
-                                                    Users.increment("globalMuteCount",{where:{userID: message.author.id}});
-                                                    GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
-                                                    
+                                                    userID: message.author.id,
+                                                    type: 0,
+                                                    reason: "Use of a blacklisted word/phrase - automod warn action",
+                                                    moderatorID: client.user.id
+                                                });
+                                                if(logchannel){
+                                                    await logchannel.send(await logs.logWarn(message.author.id, "Use of a blacklisted word/phrase - automod warn action", client.user.id, message.guild));
+                                                } 
+                                                break;
+                                            case 1:
+                                                var mutedRole;
+                                                await Configs.findOne({where: {guildID: message.guild.id}}).then(async guildConfig =>{
+                                                    mutedRole = message.guild.roles.cache.get(guildConfig.mutedRoleID);
+                                                })
+                                                if(mutedRole){
+                                                    message.member.roles.add(mutedRole).then(() => {
+                                                        const duration = blacklistItem.automodOptions.muteduration;
+                                                        Mutes.create({
+                                                            guildID: message.guild.id,
+                                                            memberID: message.author.id,
+                                                            endsAt: Date.now() + ms(duration),
+                                                            reason: "Use of a blacklisted word/phrase - automod mute action"
+                                                        }).then(async ()=>{
+                                                            Users.increment("globalMuteCount",{where:{userID: message.author.id}});
+                                                            GuildUsers.increment("guildMuteCount",{where:{guildUserID: guildUserCompositeKey}});
+                                                            
+                                                            Infractions.create({
+                                                                guildID: message.guild.id,
+                                                                userID: message.author.id,
+                                                                type: 1,
+                                                                reason: "Use of a blacklisted word/phrase - automod mute action",
+                                                                moderatorID: client.user.id
+                                                            });
+                                                            
+                                                            if(logchannel){
+                                                                await logchannel.send(await logs.logMute(message.author.id, "Use of a blacklisted word/phrase - automod mute action", duration, client.user.id, message.guild));
+                                                            } 
+                                                        }).catch(e => {
+                                                            console.log(e);
+                                                        });
+                                                    }) 
+                                                }
+                                                break;
+                                            case 2:
+                                                message.member.kick("Use of a blacklisted word/phrase - automod kick action").then(async () => {
                                                     Infractions.create({
                                                         guildID: message.guild.id,
                                                         userID: message.author.id,
-                                                        type: 1,
-                                                        reason: "Use of a blacklisted word/phrase - automod mute action",
+                                                        type: 2,
+                                                        reason: "Use of a blacklisted word/phrase - automod kick action",
                                                         moderatorID: client.user.id
                                                     });
-                                                    
                                                     if(logchannel){
-                                                        await logchannel.send(await logs.logMute(message.author.id, "Use of a blacklisted word/phrase - automod mute action", duration, client.user.id, message.guild));
+                                                        await logchannel.send(await logs.logKick(message.author.id, "Use of a blacklisted word/phrase - automod kick action", client.user.id, message.guild));
                                                     } 
-                                                }).catch(e => {
-                                                    console.log(e);
                                                 });
-                                            }) 
-                                        }
-                                        break;
-                                    case 2:
-                                        message.member.kick("Use of a blacklisted word/phrase - automod kick action").then(async () => {
-                                            Infractions.create({
-                                                guildID: message.guild.id,
-                                                userID: message.author.id,
-                                                type: 2,
-                                                reason: "Use of a blacklisted word/phrase - automod kick action",
-                                                moderatorID: client.user.id
-                                            });
-                                            if(logchannel){
-                                                await logchannel.send(await logs.logKick(message.author.id, "Use of a blacklisted word/phrase - automod kick action", client.user.id, message.guild));
-                                            } 
-                                        });
-                                        
-                                        break;
-                                    case 3:
-                                        message.member.ban({days: 7, reason: "Use of a blacklisted word/phrase - automod kick action"}).then(async () => {
-                                            Infractions.create({
-                                                guildID: message.guild.id,
-                                                userID: message.author.id,
-                                                type: 2,
-                                                reason: "Use of a blacklisted word/phrase - automod kick action",
-                                                moderatorID: client.user.id
-                                            });
-                                            if(logchannel){
-                                                await logchannel.send(await logs.logBan(message.author.id, "Use of a blacklisted word/phrase - automod ban action", client.user.id, message.guild));
-                                            } 
-                                        });
-                                        break;
-                                    default:
-                                        break;
-                                }                    
-                                return message.delete();
+                                                
+                                                break;
+                                            case 3:
+                                                message.member.ban({days: 7, reason: "Use of a blacklisted word/phrase - automod kick action"}).then(async () => {
+                                                    Infractions.create({
+                                                        guildID: message.guild.id,
+                                                        userID: message.author.id,
+                                                        type: 2,
+                                                        reason: "Use of a blacklisted word/phrase - automod kick action",
+                                                        moderatorID: client.user.id
+                                                    });
+                                                    if(logchannel){
+                                                        await logchannel.send(await logs.logBan(message.author.id, "Use of a blacklisted word/phrase - automod ban action", client.user.id, message.guild));
+                                                    } 
+                                                });
+                                                break;
+                                            default:
+                                                break;
+                                        }                    
+                                        message.delete();
+                                    })
+                                }
                             })
                         }
-                    })
-                }
+                    }
+                })
             })
             if(message.content.startsWith('$')){
                 var tagFromMsg = message.content.split('$')[1].split(' ')[0];
