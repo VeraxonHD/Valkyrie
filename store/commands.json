@@ -296,6 +296,11 @@
                         "type": "STRING"
                     }
                 ]
+            },
+            {
+                "name": "list",
+                "description": "List all current config settings",
+                "type": "SUB_COMMAND"
             }
         ]
     },
