@@ -14,7 +14,7 @@ const commands = require("./store/commands.json");
 //Globals
 const client = new Discord.Client({
     partials: ["MESSAGE", "REACTION", "CHANNEL"],
-    intents: ["GUILDS", "GUILD_MEMBERS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]
+    intents: ["GUILDS", "GUILD_MEMBERS", "GUILD_PRESENCES", "GUILD_EMOJIS_AND_STICKERS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]
 });
 const sequelize = new Sequelize({
     dialect: "sqlite",
@@ -363,7 +363,8 @@ exports.getClient = () =>{
 }
 
 //Automated/Frquent Functions
-client.setInterval(async () => {
+
+const interval = setInterval(function() {
     //Automated Umute Handling
     Mutes.findAll({where: {endsAt: {[Op.and]: [{[Op.lte]: Date.now(), [Op.ne]: "-1"}]}}}).then(async rows =>{
         rows.forEach(row => {
@@ -441,7 +442,9 @@ client.on("ready", async () =>{
 * 'interactionCreate' - Called when a user runs a slash-command.
 * @param interaction - The interaction object from the API
 */
-client.on("interaction", (interaction) =>{
+client.on("interactionCreate", (interaction) =>{
+    if(!interaction.isCommand()){ return; }
+
     var cmdFile = require(`./commands/${interaction.commandName}.js`);
     if(!cmdFile){
         return;
@@ -464,7 +467,7 @@ client.on("guildCreate", async (guild) =>{
     
     Configs.create({
         guildID: guild.id,
-        ownerID: guild.ownerID,
+        ownerID: guild.ownerId,
         logTypes: {
             usermigration: true,
             messagedelete: true,
@@ -475,7 +478,7 @@ client.on("guildCreate", async (guild) =>{
     }).then( () =>{
         console.log(`Joined Guild ${guild.name} (${guild.id}) successfully.`);
         client.guilds.fetch("409365548766461952").then(devGuild => {
-            devGuild.channels.resolve("742885805449805945").send(`I joined a new server! Name: ${guild.name}, ID: ${guild.id}, Owner: <@${guild.ownerID}>`);
+            devGuild.channels.resolve("742885805449805945").send(`I joined a new server! Name: ${guild.name}, ID: ${guild.id}, Owner: <@${guild.ownerId}>`);
         })
     }
     ).catch(console.log)
@@ -554,8 +557,8 @@ client.on("guildCreate", async (guild) =>{
         embed.addField("I couldn't find or create a log channel", "If you already have one, use `/config logchannel` to change the server config");
     }
     
-    guild.members.fetch(guild.ownerID).then(guildOwner =>{
-        guildOwner.send({embed})
+    guild.members.fetch(guild.ownerId).then(guildOwner =>{
+        guildOwner.send({embeds: [embed]})
     });
 })
 
@@ -563,7 +566,7 @@ client.on("guildCreate", async (guild) =>{
 * 'message' - Called when a message is sent in a monitored Guild
 * @param message - The message object
 */
-client.on("message", async (message) =>{
+client.on("messageCreate", async (message) =>{
     if(message.author.id == client.user.id){ return }
     if(message.channel.type === "text" && message.author.id != client.user.id){
         var guildUserCompositeKey = message.guild.id + message.author.id;
@@ -856,7 +859,7 @@ client.on("messageDelete", async (message) =>{
             embed.addField("Message Attachment URLs", attachments)
         }
         
-        return logchannel.send({embed});
+        return logchannel.send({embeds: [embed]});
     }
 });
 
@@ -904,7 +907,7 @@ client.on("messageUpdate", async (oldMessage, newMessage) =>{
                 embed.addField("Message Attachment URLs", attachments)
             }
             
-            return logchannel.send({embed});
+            return logchannel.send({embeds: [embed]});
         }
     }else{
         return;
@@ -928,7 +931,7 @@ client.on("guildMemberAdd", async (member) => {
             .addField(`Welcome to ${guild.name}!`, row.welcomeMessage)
             .setColor("GREEN");
             try{
-                member.send({embed});
+                member.send({embeds: [embed]});
             }catch(e){
                 console.log("Tried sending welcome message to the user, but it was not successful");
             }
@@ -946,7 +949,7 @@ client.on("guildMemberAdd", async (member) => {
             .setColor("DARK_GREEN")
             .setFooter("guildmemberadd.logs.valkyrie")
             .setTimestamp(new Date());
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
 });
@@ -969,7 +972,7 @@ client.on("guildMemberRemove", async (member) => {
             .setColor("DARK_RED")
             .setFooter("guildmemberremove.logs.valkyrie")
             .setTimestamp(new Date());
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
 })
@@ -1042,12 +1045,12 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
             .setTimestamp(new Date());
             
             if(oldMember.roles.cache.has(role.id) && !newMember.roles.cache.has(role.id)){
-                embed.addField("Role Removed", role)
+                embed.addField("Role Removed", role.toString())
             }else if(!oldMember.roles.cache.has(role.id) && newMember.roles.cache.has(role.id)){
-                embed.addField("Role Added", role)
+                embed.addField("Role Added", role.toString())
             }
             
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
 })
@@ -1081,7 +1084,7 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
             }else if(!newState.channel){ //If a member disconnects from voice entirely
                 embed.addField("Member Left Channel", `**${oldState.channel.name}**`)
             }
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
     
