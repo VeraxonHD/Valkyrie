@@ -14,11 +14,11 @@ exports.execute = async (interaction) => {
 
     if(!member.permissions.has("MANAGE_ROLES")){ return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_ROLES") }
 
-    var subcommand = args[0];
-    if(subcommand.name == "add"){
-        var dividerRole = subcommand.options[0].role;
-        var topRole = subcommand.options[1].role;
-        var bottomRole = subcommand.options[2].role;
+    var subcommand = interaction.options.getSubcommand();
+    if(subcommand == "add"){
+        var dividerRole = interaction.options.getRole("divider-role");
+        var topRole = interaction.options.getRole("top-role");
+        var bottomRole = interaction.options.getRole("bottom-role");
 
         Dividers.create({
             guildID: guild.id,
@@ -38,8 +38,8 @@ exports.execute = async (interaction) => {
             })
             return interaction.reply("Successfully create an auto-divider.")
         })
-    }else if(subcommand.name == "remove"){
-        var dividerRole = subcommand.options[0].role;
+    }else if(subcommand == "remove"){
+        var dividerRole = interaction.options.getRole("divider-role");
         Dividers.findOne({where: {[Op.and]: [{guildID: guild.id}, {dividerRoleID: dividerRole.id}]}}).then(divider =>{ 
             if(!divider){
                 return interaction.reply("Could not find a divider applied to that role")
