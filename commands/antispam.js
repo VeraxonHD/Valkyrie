@@ -1,3 +1,3 @@
 exports.execute = async (interaction) => {
-    return;
+    return interaction.reply({content: "This command is currently not implemented.", ephemeral: true});
 }
