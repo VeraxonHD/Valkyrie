@@ -519,7 +519,7 @@ client.on("guildCreate", async (guild) =>{
         try{
             guild.channels.create("logchannel", {
                 data: {
-                    type: "text",
+                    type: "GUILD_TEXT",
                     topic: "Log channel for Valkyrie",
                     reason: "Automatically created a Log Channel. If you have one already, please use /config to point to that role. Else, feel free to edit this channel however you please."
                 },
@@ -568,7 +568,7 @@ client.on("guildCreate", async (guild) =>{
 */
 client.on("messageCreate", async (message) =>{
     if(message.author.id == client.user.id){ return }
-    if(message.channel.type === "text" && message.author.id != client.user.id){
+    if(message.channel.type === "GUILD_TEXT" && message.author.id != client.user.id){
         var guildUserCompositeKey = message.guild.id + message.author.id;
         Users.findOne({where: {userID: message.author.id}}).then(user => {
             if(!user){
@@ -1122,7 +1122,7 @@ async function checkHubThenCreate(newState){
                 }else{
                     var lobbyChannelParent = guild.channels.cache.get(lobbyhub.lobbyHubParentID);
                     guild.channels.create(`${member.displayName}'s Lobby`, {
-                        type: "voice",
+                        type: "GUILD_VOICE",
                         parent: lobbyChannelParent
                     }).then(async newLobby =>{
                         Lobbies.create({
