@@ -20,15 +20,11 @@ exports.execute = async (interaction) => {
     }else if(member.permissions.has("BAN_MEMBERS") == false){
         return interaction.reply("Code 103 - Invalid Permissions. You are missing permission BAN_MEMBERS")
     }else{
-        var targetID;
-        var reason = "No Reason Specified";
-        args[0].options.forEach(arg => {
-            if(arg.name == "member" || arg.name == "userid"){
-                targetID = arg.value;
-            }else if(arg.name == "reason"){
-                reason = arg.value;
-            }
-        });
+        var targetID = interaction.options.getMember("member")? interaction.options.getMember("member").id: interaction.options.getString("userid");
+        var reason = interaction.options.getString("reason");
+        if(!reason){
+            reason = "No reason Specified."
+        }
 
         guild.members.fetch(targetID).then(async targetMember =>{
             if(targetMember.bannable){
