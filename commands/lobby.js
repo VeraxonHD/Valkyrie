@@ -7,8 +7,6 @@ exports.execute = async (interaction) => {
 
     //Dependencies
     const main = require("../main.js");
-    const logs = require("../util/logFunctions.js");
-    const Discord = require("discord.js");
     const { Op } = require("sequelize");
     const df = require("dateformat");
 
@@ -17,11 +15,12 @@ exports.execute = async (interaction) => {
     const LobbyHubs = main.getLobbyHubsTable();
     const client = main.getClient();
 
-    if(args[0].name == "modify"){
-        var subArgs = args[0].options[0].options;
-        var subCommand = args[0].options[0];
-        if(subCommand.name == "size"){
-            lobbyNewSize = subArgs[0].value;
+    const subcommandGroup = interaction.options._group;
+    const subcommand = interaction.options.getSubcommand();
+
+    if(subcommandGroup == "modify"){
+        if(subcommand == "size"){
+            var lobbyNewSize = interaction.options.getInteger("size");
             Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{creatorID: member.id}]}}).then(lobby =>{
                 if(lobby){
                     var lobbyChannel = guild.channels.cache.get(lobby.lobbyID);
@@ -39,25 +38,22 @@ exports.execute = async (interaction) => {
                     return interaction.reply("Error: You do not have a lobby channel created in this guild.");
                 }
             });
-        }else if(subCommand.name == "locked"){
-            lobbyLockedState = subArgs[0].value;
+        }else if(subcommand == "locked"){
+            lobbyLockedState = interaction.options.getBoolean("toggle");
             Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{creatorID: member.id}]}}).then(lobby =>{
                 if(lobby){
                     var lobbyChannel = guild.channels.cache.get(lobby.lobbyID);
+                    
                     if(lobbyLockedState == true){
-                        lobbyChannel.overwritePermissions([
-                            {
-                                id: guild.id,
-                                deny: ["CONNECT"]
-                            },
-                            {
-                                id: member,
-                                allow: ["CONNECT"]
-                            }
-                        ])
+                                                lobbyChannel.permissionOverwrites.create(guild.id, {
+                            "CONNECT": false,
+                        });
+                        lobbyChannel.permissionOverwrites.create(member, {
+                            "CONNECT": true,
+                        });
                         interaction.reply(`Successfully changed your Lobby locked state to true.`);
                     }else{
-                        lobbyChannel.permissionOverwrites.each(perm =>{perm.delete()});
+                        lobbyChannel.permissionOverwrites.set([]);
                         interaction.reply(`Successfully changed your Lobby locked state to false.`);
                     }
                     //set permissions
