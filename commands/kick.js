@@ -23,7 +23,7 @@ exports.execute = async (interaction) => {
         var targetID = interaction.options.getMember("member")? interaction.options.getMember("member").id: interaction.options.getString("userid");
         var reason = interaction.options.getString("reason");
         if(!reason){
-            reason = "No reason Specified."
+            reason = "No reason specified"
         }
 
         guild.members.fetch(targetID).then(async targetMember =>{
