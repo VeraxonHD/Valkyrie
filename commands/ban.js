@@ -31,7 +31,9 @@ exports.execute = async (interaction) => {
                 targetMember.ban({days: 7, reason: reason});
                 interaction.reply(`User ${targetMember.displayName} was banned from the server. Reason: ${reason}. <:banhammer:722877640201076775>`)
                 Configs.findOne({where:{guildID: guild.id}}).then(async guildConfig => {
-                    guild.channels.resolve(guildConfig.logChannelID).send(await logs.logBan(targetMember, reason, member, guild));
+                    const logchannel = await guild.channels.resolve(guildConfig.logChannelID);
+                    const embed = await logs.logBan(targetMember.id, reason, member, guild);
+                    logchannel.send({embeds: [embed]});
                 }).then(()=>{
                     var guildUserCompositeKey = guild.id + targetID
                     Users.increment("globalBanCount",{where:{userID: targetID}});
