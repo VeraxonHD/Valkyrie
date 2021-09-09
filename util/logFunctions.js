@@ -16,7 +16,7 @@ exports.logMute = async (targetMember, duration, reason, moderator, guild)=>{
         .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
         .setFooter("logMute.logs.valkyrie");
-    return {embed};
+    return embed;
 }
 
 /**
@@ -35,7 +35,7 @@ exports.logBan = async (targetMember, reason, moderator, guild)=>{
         .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
         .setFooter("logBan.logs.valkyrie");
-    return {embed};
+    return embed;
 }
 
 /**
@@ -53,8 +53,9 @@ exports.logKick = async (targetMember, reason, moderator, guild)=>{
         .addField("Reason", reason, true)
         .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
+        .setDescription("Test")
         .setFooter("logKick.logs.valkyrie");
-    return {embed};
+    return embed;
 }
 
 /**
@@ -73,5 +74,5 @@ exports.logWarn = async (targetMember, reason, moderator, guild)=>{
         .addField("Moderator", await guild.members.resolve(moderator).toString())
         .setColor("RED")
         .setFooter("logWarn.logs.valkyrie");
-    return {embed};
+    return embed;
 }
