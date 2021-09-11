@@ -705,27 +705,25 @@ client.on("messageCreate", async (message) =>{
                 Tags.findOne({where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}}).then(tag =>{
                     if(tag){
                         var channelAccess, roleAccess, memberAccess = false;
+                        var roleLength = tag.access.roles.length;
+                        var memberLength = tag.access.members.length;
                         
-                        if(tag.access.channels.includes(message.channel.id) || tag.access.channels.length == 0){
+                        if(tag.access.channels.includes(message.channel.id)){
                             channelAccess = true;
                         }
                         
-                        if(tag.access.roles.length == 0){
-                            roleAccess = true;
-                        }else{
-                            tag.access.roles.forEach(role =>{
-                                if(message.member.roles.cache.has(role)){
-                                    roleAccess = true;
-                                    return;
-                                }
-                            });
-                        }
+                        tag.access.roles.forEach(role =>{
+                            if(message.member.roles.cache.has(role)){
+                                roleAccess = true;
+                                return;
+                            }
+                        });
                         
-                        if(tag.access.members.includes(message.member.id) || tag.access.members.length == 0){
+                        if(tag.access.members.includes(message.member.id)){
                             memberAccess = true;
                         }
                         
-                        if(channelAccess && roleAccess && memberAccess){
+                        if(channelAccess && ((tag.access.roles.length == 0 && tag.access.members.length != 0 && memberAccess) || (tag.access.roles.length == 0 && tag.access.members.length == 0) || (tag.access.members.length == 0 && tag.access.roles.length != 0 && roleAccess) || (tag.access.roles.length != 0 && tag.access.members.length != 0 && memberAccess && roleAccess) || (roleAccess || memberAccess))){
                             var response = tag.response;
                             
                             response = response.replace(/%AUTH/g, message.member.displayName);
