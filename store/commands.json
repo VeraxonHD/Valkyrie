@@ -469,7 +469,7 @@
                                 "type": "ROLE"
                             },
                             {
-                                "name": "userid",
+                                "name": "member",
                                 "description": "@Mention of the user to enable/disable access.",
                                 "type": "USER"
                             }
