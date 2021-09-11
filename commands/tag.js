@@ -28,16 +28,16 @@ exports.execute = async (interaction) => {
     const Tags = main.getTagsTable();
     const client = main.getClient();
 
-    const subcommandGroup = interaction.options._group;
-    const subcommand = interaction.options.getSubcommand();
+    const subcommandGroup = args._group;
+    const subcommand = args.getSubcommand();
 
     if(subcommandGroup == "modify"){
         if(!member.permissions.has("MANAGE_MESSAGES")){
             return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
         }
         if(subcommand == "name"){
-            var tagOldName = interaction.options.getString("old-name");
-            var tagNewName = interaction.options.getString("new-name");
+            var tagOldName = args.getString("old-name");
+            var tagNewName = args.getString("new-name");
 
             Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagOldName}]}}).then(tag =>{
                 if(!tag){
@@ -55,8 +55,8 @@ exports.execute = async (interaction) => {
                 return console.error(e);
             })
         }else if(subcommand == "response"){
-            var tagName = interaction.options.getString("tag");
-            var tagNewResponse = interaction.options.getString("text");
+            var tagName = args.getString("tag");
+            var tagNewResponse = args.getString("text");
 
             Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
                 if(!tag){
@@ -75,9 +75,9 @@ exports.execute = async (interaction) => {
             })
         }else if(subcommand == "access"){
 
-            var tagName = interaction.options.getString("tag");
-            var tagNewAccessRole = interaction.options.getRole("role");
-            var tagNewAccessMember = interaction.options.getMember("member");
+            var tagName = args.getString("tag");
+            var tagNewAccessRole = args.getRole("role");
+            var tagNewAccessMember = args.getMember("member");
 
             Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
                 if(!tag){
@@ -113,8 +113,8 @@ exports.execute = async (interaction) => {
                 return console.error(e);
             });
         }else if(subcommand == "channels"){
-            var tagName = interaction.options.getString("tag");
-            var tagChannel = interaction.options.getChannel("channel");
+            var tagName = args.getString("tag");
+            var tagChannel = args.getChannel("channel");
             Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
                 if(!tag){
                     interaction.reply(`Tag **${tagName}** does not exist.`);
@@ -187,8 +187,8 @@ exports.execute = async (interaction) => {
             return interaction.reply("Code 103 - Invalid permissions. Missing permission MANAGE_MESSAGES");
         }
 
-        var tagName = interaction.options.getString("name");
-        var tagResponse = interaction.options.getString("response");
+        var tagName = args.getString("name");
+        var tagResponse = args.getString("response");
 
         Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
             if(!tag){
@@ -221,7 +221,7 @@ exports.execute = async (interaction) => {
             return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
         }
 
-        var tagName = interaction.options.getString("tag");
+        var tagName = args.getString("tag");
         
         Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(tag =>{
             if(!tag){
@@ -239,7 +239,7 @@ exports.execute = async (interaction) => {
             return console.error(e);
         })
     }else if(subcommandGroup == null && subcommand == "info"){
-        var tagName = interaction.options.getString("tag");
+        var tagName = args.getString("tag");
         Tags.findOne({where: {[Op.and]: [{guildID: guild.id}, {name: tagName}]}}).then(async tag =>{
             if(!tag){
                 interaction.reply(`Tag **${tagName}** does not exist.`);

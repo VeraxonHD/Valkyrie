@@ -19,10 +19,10 @@ exports.execute = async (interaction) => {
         return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES");
     }
     
-    var subcommandgroup = interaction.options._group;
-    var subcommand = interaction.options.getSubcommand();
+    var subcommandgroup = args._group;
+    var subcommand = args.getSubcommand();
     if(subcommandgroup == null && subcommand == "add"){
-        var phrase = interaction.options.getString("phrase");
+        var phrase = args.getString("phrase");
         
         Blacklists.findOne({where: {[Op.and]: [{guildID: guild.id}, {phrase: phrase}]}}).then(blacklistItem => {
             if(blacklistItem){
@@ -52,7 +52,7 @@ exports.execute = async (interaction) => {
             }
         });
     }else if(subcommandgroup == null && subcommand == "remove"){
-        var blacklistID = interaction.options.getInteger("blacklistid");
+        var blacklistID = args.getInteger("blacklistid");
         
         Blacklists.findOne({where: {[Op.and]: [{guildID: guild.id}, {blacklistID: blacklistID}]}}).then(blacklistItem => {
             if(!blacklistItem){
@@ -63,7 +63,7 @@ exports.execute = async (interaction) => {
             }
         });
     }else if(subcommandgroup == "exempt" && subcommand == "add"){
-        var targetmember = interaction.options.getMember("user");
+        var targetmember = args.getMember("user");
         BlacklistExemptions.findOne({where: {[Op.and]: [{guildID: guild.id}, {userID: targetmember.id}]}}).then(async row => {
             if(!row){
                 BlacklistExemptions.create({
@@ -77,7 +77,7 @@ exports.execute = async (interaction) => {
             }
         })
     }else if(subcommandgroup == "exempt" && subcommand == "remove"){
-        var targetmember = interaction.options.getMember("user");
+        var targetmember = args.getMember("user");
         BlacklistExemptions.findOne({where: {[Op.and]: [{guildID: guild.id}, {userID: targetmember.id}]}}).then(async row => {
             if(!row){
                 return interaction.reply("That user is not exempt from blacklist checks on this Guild.");
@@ -101,9 +101,9 @@ exports.execute = async (interaction) => {
             }
         })
     }else if(subcommandgroup == "automod" && subcommand == "set"){
-        var blacklistid = interaction.options.getInteger("blacklistid");
-        var choice = interaction.options.getInteger("action");
-        var muteduration = interaction.options.getString("muteduration")? interaction.options.getString("muteduration"): null;
+        var blacklistid = args.getInteger("blacklistid");
+        var choice = args.getInteger("action");
+        var muteduration = args.getString("muteduration")? args.getString("muteduration"): null;
         
         if(choice == 1 && muteduration == null){
             return interaction.reply("You must define a valid muteduration argument.")
@@ -128,7 +128,7 @@ exports.execute = async (interaction) => {
             }
         })
     }else if(subcommandgroup == "automod" && subVar == "remove"){
-        var blacklistid = interaction.options.getInteger("blacklistid");
+        var blacklistid = args.getInteger("blacklistid");
         Blacklists.findOne({where: {[Op.and]: [{guildID: guild.id}, {blacklistID: blacklistid}]}}).then(blacklistItem => {
             if(blacklistItem){
                 Blacklists.update({automodRule: null, automodOptions: {}}, {where: {[Op.and]: [{guildID: guild.id}, {blacklistID: blacklistid}]}}).then(() => {

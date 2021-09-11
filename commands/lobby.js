@@ -15,12 +15,12 @@ exports.execute = async (interaction) => {
     const LobbyHubs = main.getLobbyHubsTable();
     const client = main.getClient();
 
-    const subcommandGroup = interaction.options._group;
-    const subcommand = interaction.options.getSubcommand();
+    const subcommandGroup = args._group;
+    const subcommand = args.getSubcommand();
 
     if(subcommandGroup == "modify"){
         if(subcommand == "size"){
-            var lobbyNewSize = interaction.options.getInteger("size");
+            var lobbyNewSize = args.getInteger("size");
             Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{creatorID: member.id}]}}).then(lobby =>{
                 if(lobby){
                     var lobbyChannel = guild.channels.cache.get(lobby.lobbyID);
@@ -39,7 +39,7 @@ exports.execute = async (interaction) => {
                 }
             });
         }else if(subcommand == "locked"){
-            lobbyLockedState = interaction.options.getBoolean("toggle");
+            lobbyLockedState = args.getBoolean("toggle");
             Lobbies.findOne({where: {[Op.and]: [{guildID: guild.id},{creatorID: member.id}]}}).then(lobby =>{
                 if(lobby){
                     var lobbyChannel = guild.channels.cache.get(lobby.lobbyID);

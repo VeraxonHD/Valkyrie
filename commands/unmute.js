@@ -18,7 +18,7 @@ exports.execute = (interaction) => {
     }else if(member.permissions.has("MANAGE_MESSAGES") == false){
         return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES")
     }else{
-        var targetID = interaction.options.getMember("member")? interaction.options.getMember("member").id: interaction.options.getString("userid");
+        var targetID = args.getMember("member")? args.getMember("member").id: args.getString("userid");
 
         Configs.findOne({where: {guildID: guild.id}}).then(guildConfig =>{
             var mutedRole = guild.roles.cache.get(guildConfig.mutedRoleID);

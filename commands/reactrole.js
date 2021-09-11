@@ -19,13 +19,13 @@ exports.execute = (interaction) =>{
         return interaction.reply("Code 102 - Invalid Permissions. You are missing permission ADMINISTRATOR");
     }
 
-    const subcommandGroup = interaction.options._group;
-    const subcommand = interaction.options.getSubcommand();
+    const subcommandGroup = args._group;
+    const subcommand = args.getSubcommand();
 
     if(subcommand == "init"){
         //Argument Handling
-        var rrChannel = interaction.options.getChannel("channel");
-        var messageText = interaction.options.getString("message");
+        var rrChannel = args.getChannel("channel");
+        var messageText = args.getString("message");
         if(!messageText){
             messageText = "Select one of the Emoji below to recieve the corresponding role.";
         }
@@ -50,9 +50,9 @@ exports.execute = (interaction) =>{
             return interaction.reply("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
         });
     }else if(subcommand == "add"){
-        var messageID = interaction.options.getString("messageid");
-        var reactionEmoji = interaction.options.getString("reactionemoji");
-        var reactionRole = interaction.options.getRole("role");
+        var messageID = args.getString("messageid");
+        var reactionEmoji = args.getString("reactionemoji");
+        var reactionRole = args.getRole("role");
 
         ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
             var rrGuild = client.guilds.cache.get(row.guildID);
@@ -87,7 +87,7 @@ exports.execute = (interaction) =>{
             })
         })
     }else if(subcommand == "delete"){
-        var messageID = interaction.options.getString("messageid")
+        var messageID = args.getString("messageid")
 
         ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
             var rrGuild = client.guilds.cache.get(row.guildID);

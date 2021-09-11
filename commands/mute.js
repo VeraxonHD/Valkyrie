@@ -22,9 +22,9 @@ exports.execute = async (interaction) => {
     }else if(member.permissions.has("MANAGE_MESSAGES") == false){
         return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES")
     }else{
-        var targetID = interaction.options.getMember("member")? interaction.options.getMember("member").id: interaction.options.getString("userid");
-        var duration = interaction.options.getString("duration")? interaction.options.getString("duration"): -1;
-        var reason = interaction.options.getString("reason");
+        var targetID = args.getMember("member")? args.getMember("member").id: args.getString("userid");
+        var duration = args.getString("duration")? args.getString("duration"): -1;
+        var reason = args.getString("reason");
         if(!reason){
             reason = "No reason specified"
         }

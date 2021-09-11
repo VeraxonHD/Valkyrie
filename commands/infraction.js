@@ -17,15 +17,15 @@ exports.execute = async (interaction) => {
 
     if(!member.permissions.has("MANAGE_MESSAGES")){ return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES") }
 
-    const subcommand = interaction.options.getSubcommand();
-    const subcommandGroup = interaction.options._group;
+    const subcommand = args.getSubcommand();
+    const subcommandGroup = args._group;
 
     if(subcommandGroup == "list"){
         var targetMember;
         if(subcommand == "user"){
-            targetMember = await guild.members.resolve(interaction.options.getString("userid"));
+            targetMember = await guild.members.resolve(args.getString("userid"));
         }else if(subcommand == "mention"){
-            targetMember = interaction.options.getMember("member");
+            targetMember = args.getMember("member");
         }
 
         Infractions.findAll({where: {[Op.and]: [{guildID: guild.id}, {userID: targetMember.id}]}}).then(async infractions => {
@@ -90,11 +90,11 @@ exports.execute = async (interaction) => {
     }else if(subcommandGroup == "revoke"){
         var targetMember;
         if(subcommand == "user"){
-            targetMember = await guild.members.resolve(interaction.options.getString("userid"));
+            targetMember = await guild.members.resolve(args.getString("userid"));
         }else if(subcommand == "mention"){
-            targetMember = interaction.options.getMember("member");
+            targetMember = args.getMember("member");
         }
-        const argInfractionID = interaction.options.getString("infractionid");
+        const argInfractionID = args.getString("infractionid");
 
         Infractions.findOne({where: {[Op.and]: [{guildID: guild.id}, {userID: targetMember.id}, {infractionID: argInfractionID}]}}).then(row => {
             if(!row){

@@ -16,14 +16,14 @@ exports.execute = async (interaction) => {
     const LobbyHubs = main.getLobbyHubsTable();
     const client = main.getClient();
 
-    const subcommand = interaction.options.getSubcommand();
+    const subcommand = args.getSubcommand();
 
     if(subcommand == "create"){
         if(!member.permissions.has("MANAGE_MESSAGES")){
             return interaction.reply("Code 103 - Invalid permissions. You are missing permission MANAGE_MESSAGES");
         }
-        var lobbyChannel = interaction.options.getChannel("channel");
-        var lobbyParent = interaction.options.getChannel("parent");
+        var lobbyChannel = args.getChannel("channel");
+        var lobbyParent = args.getChannel("parent");
         if(guild.channels.resolve(lobbyChannel).type != "GUILD_VOICE"){
             return interaction.reply("That is not a voice channel. Lobby Hub channels must be of type VOICE_CHANNEL");
         }
@@ -49,7 +49,7 @@ exports.execute = async (interaction) => {
         if(!member.permissions.has("MANAGE_MESSAGES")){
             return interaction.reply("Code 103 - Invalid permissions.");
         }
-        var lobbyChannel = interaction.options.getChannel("channel");
+        var lobbyChannel = args.getChannel("channel");
         if(guild.channels.resolve(lobbyChannel).type != "GUILD_VOICE"){
             return interaction.reply("That is not a voice channel. Lobby Hub channels must be of type VOICE_CHANNEL");
         }

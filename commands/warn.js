@@ -20,15 +20,11 @@ exports.execute = async (interaction) => {
     }
 
     //Arguments
-    var targetID;
-    var reason = "No Reason Supplied";
-    args[0].options.forEach(arg => {
-        if(arg.name == "member" || arg.name == "userid"){
-            targetID = arg.value;
-        }else if(arg.name == "reason"){
-            reason = arg.value;
-        }
-    });
+    var targetID = args.getMember("member")? args.getMember("member").id: args.getString("userid");
+    var reason = args.getString("reason");
+    if(!reason){
+        reason = "No reason specified"
+    }
 
     guild.members.fetch(targetID).then(async targetMember => {
         Infractions.create({
@@ -46,7 +42,9 @@ exports.execute = async (interaction) => {
             GuildUsers.increment("guildWarnCount",{where:{guildUserID: guildUserCompositeKey}});
 
             Configs.findOne({where:{guildID: guild.id}}).then(async guildConfig => {
-                guild.channels.resolve(guildConfig.logChannelID).send(await logs.logWarn(targetMember, reason, member, guild));
+                const logchannel = await guild.channels.resolve(guildConfig.logChannelID);
+                const embed = await logs.logWarn(targetMember, reason, member, guild);
+                logchannel.send({embeds: [embed]});
             })
         }).catch(err =>{
             console.log(err);

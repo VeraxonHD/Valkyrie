@@ -20,11 +20,11 @@ exports.execute = async (interaction) => {
     }else if(member.permissions.has("ADMINISTRATOR") == false){
         return interaction.reply("Code 103 - Invalid Permissions. You are missing permission ADMINISTRATOR.")
     }else{
-        var subcommandGroup = interaction.options._group;
-        var subcommand = interaction.options.getSubcommand();
+        var subcommandGroup = args._group;
+        var subcommand = args.getSubcommand();
 
         if(subcommandGroup == null && subcommand == "muterole"){
-            const role = interaction.options.getRole("role");
+            const role = args.getRole("role");
             Configs.update({mutedRoleID: role.id},{where: {guildID: guild.id}}).then(() =>{
                 return interaction.reply(`Updated \`${subcommand}\` to \`${role.name}\` successfully.`)
             }).catch(e => {
@@ -32,7 +32,7 @@ exports.execute = async (interaction) => {
                 return console.error(e);
             });
         }else if(subcommandGroup == null && subcommand == "logchannel"){
-            const channel = interaction.options.getChannel("channel");
+            const channel = args.getChannel("channel");
             Configs.update({logChannelID: channel.id},{where: {guildID: guild.id}}).then(() =>{
                 return interaction.reply(`Updated \`${subcommand}\` to \`${channel.toString()}\` successfully.`)
             }).catch(e => {
@@ -40,7 +40,7 @@ exports.execute = async (interaction) => {
                 return console.error(e);
             });
         }else if(subcommandGroup == null && subcommand == "autorole"){
-            const role = interaction.options.getRole("role");
+            const role = args.getRole("role");
             var roleid = null;
             if(role){
                 roleid = role.id;
@@ -56,7 +56,7 @@ exports.execute = async (interaction) => {
                 return console.error(e);
             });
         }else if(subcommandGroup == null && subcommand == "welcomemsg"){
-            var msg = interaction.options.getString("message");
+            var msg = args.getString("message");
             if(!msg){
                 msg = null;
             }
@@ -72,7 +72,7 @@ exports.execute = async (interaction) => {
             });
         }else if(subcommandGroup == "logs"){
             var logType = subcommand;
-            var logEnabled = interaction.options.getBoolean("enable");
+            var logEnabled = args.getBoolean("enable");
 
             Configs.findOne({where: {guildID: guild.id}}).then(config => {
                 if(!config){
