@@ -367,7 +367,6 @@ const LFGroups = sequelize.define("LFGroups", {
         allowNull: false
     }
 })
-
 const LFGParticipants = sequelize.define("LFGParticipants", {
     participantID: {
         type: DataTypes.INTEGER,
@@ -520,6 +519,27 @@ const interval = setInterval(function() {
                             }
                         })
                         LFGroups.update({notified: true}, {where: {messageID: group.messageID}});
+                    }else if(Date.now().valueOf()/1000 > group.time + 300){
+                        const lfgGuild = client.guilds.resolve(group.guildID);
+                        if(lfgGuild){
+                            const lfgChannel = lfgGuild.channels.resolve(group.channelID);
+                            if(lfgChannel){
+                                lfgChannel.messages.fetch(group.messageID).then(msg => {
+                                    msg.delete();
+                                }).catch(err => { 
+                                    console.log(`LFG Message ${group.messageID} does not exist. Deleting record...`);
+                                }); 
+                            }
+                        }
+                        LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                            if(participants.length > 0){
+                                participants.forEach(participant => {
+                                    participant.destroy();              
+                                })
+                            }
+                        })
+                        LFGroups.update({notified: true}, {where: {messageID: group.messageID}});
+                        return group.destroy();
                     }
                 }
             });
