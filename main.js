@@ -319,6 +319,75 @@ const BlacklistExemptions = sequelize.define("BlacklistExemptions", {
         allowNull: false
     }
 })
+const LFGroups = sequelize.define("LFGroups", {
+    groupID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    messageID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    channelID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    creatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    time: {
+        type: DataTypes.BIGINT,
+        allowNull: false
+    },
+    description: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    groupSize: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    pingRole: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    notified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false
+    }
+})
+
+const LFGParticipants = sequelize.define("LFGParticipants", {
+    participantID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    messageID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    commitmentType: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    }
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -357,13 +426,18 @@ exports.getBlacklistsTable = () => {
 exports.getBlacklistExemptionsTable = () => {
     return BlacklistExemptions;
 }
+exports.getLFGroupsTable = () =>{
+    return LFGroups;
+}
+exports.getLFGParticipantsTable = () =>{
+    return LFGParticipants;
+}
 //Client Getter
 exports.getClient = () =>{
     return client;
 }
 
 //Automated/Frquent Functions
-
 const interval = setInterval(function() {
     //Automated Umute Handling
     Mutes.findAll({where: {endsAt: {[Op.and]: [{[Op.lte]: Date.now(), [Op.ne]: "-1"}]}}}).then(async rows =>{
@@ -391,6 +465,66 @@ const interval = setInterval(function() {
             });
         });
     });
+
+    //LFG Group checks
+    LFGroups.findAll().then(groups => {
+        if(groups.length > 0){
+            groups.forEach(group => {
+                if(group.notified == false){
+                    if(group.time - 600 < Date.now().valueOf()/1000 && Date.now().valueOf()/1000 < group.time){
+                        const lfgGuild = client.guilds.resolve(group.guildID);
+                        if(!lfgGuild){
+                            console.log(`LFG Guild ${group.guildID} does not exist. Deleting record...`);
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                                participants.forEach(part => {
+                                    part.destroy();
+                                })
+                            })
+                            return group.destroy();
+                        }
+
+                        const lfgChannel = lfgGuild.channels.resolve(group.channelID);
+                        if(!lfgChannel){
+                            console.log(`LFG Channel ${group.channelID} does not exist. Deleting record...`);
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                                participants.forEach(part => {
+                                    part.destroy();
+                                })
+                            })
+                            return group.destroy();
+                        }
+
+                        const lfgMessage = lfgChannel.messages.fetch(group.messageID).catch(err => { 
+                            console.log(`LFG Message ${group.messageID} does not exist. Deleting record...`);
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                                participants.forEach(part => {
+                                    part.destroy();
+                                })
+                            })
+                            return group.destroy();
+                        });
+
+                        LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                            if(participants.length > 0){
+                                participants.forEach(participant => {
+                                    const lfgParticipant = lfgGuild.members.resolve(participant.memberID);
+                                    if(!lfgParticipant){ console.log(`LFG Participant ${participant.memberID} does not exist. Deleting record...`); participant.destroy(); }
+                                    
+                                    try{
+                                        lfgParticipant.send(`Hello! You're receiving this notification because you've signed up for the event **${group.name}** in **${lfgGuild.name}**, which is scheduled to start in ~10 minutes.`);
+                                    }catch(err){
+                                        console.log(`Could not send LFG reminder message to user ${lfgParticipant.tag} - see error below`);
+                                        console.error(err);
+                                    }                   
+                                })
+                            }
+                        })
+                        LFGroups.update({notified: true}, {where: {messageID: group.messageID}});
+                    }
+                }
+            });
+        }
+    })
 }, 2000);
 
 /**==============
@@ -401,7 +535,7 @@ const interval = setInterval(function() {
 * 'ready' event - Called when bot is connected to the API.
 */
 client.on("ready", async () =>{
-    console.log("Bot Loaded.");
+    console.log("[VALKYRIE] Bot Loaded.");
     
     //Sync Database Tables
     await Configs.sync();
@@ -417,6 +551,10 @@ client.on("ready", async () =>{
     await Dividers.sync();
     await Blacklists.sync();
     await BlacklistExemptions.sync();
+    await LFGroups.sync();
+    await LFGParticipants.sync();
+
+    console.log("[VALKYRIE] Tables Loaded.")
     
     //Set Presence
     //client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
@@ -771,17 +909,164 @@ client.on("messageReactionAdd", async (messageReaction, user) => {
     var emojiID = messageReaction.emoji.id;
     
     ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
-        if(!row) return;
-        var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
+        if(row){
+            var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
         
-        try{
-            message.guild.members.fetch(user.id).then(member =>{
-                member.roles.add(role);
-            })
-        }catch(e){
-            console.log(e);
+            try{
+                message.guild.members.fetch(user.id).then(member =>{
+                    member.roles.add(role);
+                })
+            }catch(e){
+                console.log(e);
+            }
         }
-    })
+    });
+
+    LFGroups.findOne({where: {messageID: message.id}}).then(group => {
+        if(group){
+            if(messageReaction.emoji.name == '✅'){
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
+                    if(!participant){
+                        LFGParticipants.create({
+                            messageID: group.messageID,
+                            memberID: user.id,
+                            commitmentType: 0
+                        }).then(() =>{
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+                                var newParticipants;
+
+                                if(participantsField.value == "None" && participantsField.value.length == 4){
+                                    newParticipants = [];
+                                }else{
+                                    newParticipants = participantsField.value.split(" | ");
+                                }
+
+                                newParticipants.push(user.tag)
+
+                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants.join(" | "), inline: true}
+
+                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
+
+                                message.edit({embeds: [embed]});
+                            })
+                            
+                        })
+                    }
+                    messageReaction.users.remove(user.id);
+                })
+            }else if(messageReaction.emoji.name == '❎'){
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
+                    if(participant){
+                        if(participant.commitmentType == 0){
+                            participant.destroy();
+                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 0}]}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+
+                                var currentParticipants = participantsField.value.split(" | ")
+
+                                var newParticipants = [];
+                                currentParticipants.forEach(part => {
+                                    if(!part.includes(user.tag)){
+                                        newParticipants.push(part)
+                                    }
+                                })
+
+                                if(newParticipants.length == 0){
+                                    newParticipants = "None"
+                                }else{
+                                    newParticipants = newParticipants.join(" | ")
+                                }
+
+                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants, inline: true}
+
+                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
+
+                                message.edit({embeds: [embed]});
+                            })
+                        }else{
+                            participant.destroy();
+                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 1}]}}).then(allSubstitutes => {
+                                var embed = message.embeds[0];
+                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
+
+                                var currentSubstitutes = substitutesField.value.split(" | ")
+
+                                var newSubstitutes = [];
+                                currentSubstitutes.forEach(part => {
+                                    if(!part.includes(user.tag)){
+                                        newSubstitutes.push(part)
+                                    }
+                                })
+
+                                if(newSubstitutes.length == 0){
+                                    newSubstitutes = "None"
+                                }else{
+                                    newSubstitutes = newSubstitutes.join(" | ")
+                                }
+
+                                var newField = {name: `Substitutes:`, value: newSubstitutes, inline: true}
+
+                                embed.fields[embed.fields.indexOf(substitutesField)] = newField;
+
+                                message.edit({embeds: [embed]});
+                            })
+                        }
+                    }
+                    messageReaction.users.remove(user.id);
+                })
+            }else if(messageReaction.emoji.name == '❓'){
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
+                    if(!participant){
+                        LFGParticipants.create({
+                            messageID: group.messageID,
+                            memberID: user.id,
+                            commitmentType: 1
+                        }).then(() =>{
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
+
+                                var newParticipants = [];
+
+                                if(!substitutesField){
+                                    newParticipants.push(user.tag)
+                                    substitutesField = {name: "Substitutes:", value: newParticipants.join(" | "), inline: true}
+                                    embed.spliceFields(embed.fields.indexOf(participantsField)+1, 0, substitutesField);
+                                }else{
+                                    if(substitutesField.value == "None" && substitutesField.value.length == 4){
+                                        newParticipants = [];
+                                    }else{
+                                        newParticipants = substitutesField.value.split(" | ");
+                                    }
+    
+                                    newParticipants.push(user.tag);
+    
+                                    var newField = {name: `Substitutes:`, value: newParticipants.join(" | "), inline: true}
+                                    embed.fields[embed.fields.indexOf(substitutesField)] = newField;
+                                }
+
+                                message.edit({embeds: [embed]});
+                            })
+                        })
+                    }
+                    messageReaction.users.remove(user.id);
+                })
+            }
+        }
+    });
 });
 
 /**
@@ -798,15 +1083,16 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
     var emojiID = messageReaction.emoji.id;
     
     ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
-        if(!row) return;
-        var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
+        if(row){
+            var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
         
-        try{
-            message.guild.members.fetch(user.id).then(member =>{
-                member.roles.remove(role);
-            })
-        }catch(e){
-            console.log(e);
+            try{
+                message.guild.members.fetch(user.id).then(member =>{
+                    member.roles.remove(role);
+                })
+            }catch(e){
+                console.log(e);
+            }
         }
     })
 });

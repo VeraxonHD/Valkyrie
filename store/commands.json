@@ -1179,7 +1179,7 @@
                     },
                     {
                         "name": "time",
-                        "description": "Time of the event (format: dd/mm/yyyy hh:mm:ss)",
+                        "description": "Date/Time of event. Format: yyyy/mm/dd hh:mm (will convert to local time by default, or add GMT±?)",
                         "type": "STRING",
                         "required": true
                     },
@@ -1213,6 +1213,12 @@
                         "type": "SUB_COMMAND",
                         "options": [
                             {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
                                 "name": "new-name",
                                 "description": "The new name",
                                 "type": "STRING",
@@ -1226,8 +1232,14 @@
                         "type": "SUB_COMMAND",
                         "options": [
                             {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
                                 "name": "new-time",
-                                "description": "The new time (format: dd/mm/yyyy hh:mm:ss)",
+                                "description": "Date/Time of event. Format: yyyy/mm/dd hh:mm (will convert to local time by default, or add GMT±?)",
                                 "type": "STRING",
                                 "required": true
                             }
@@ -1238,6 +1250,12 @@
                         "description": "Edit the description of the activity",
                         "type": "SUB_COMMAND",
                         "options": [
+                            {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
                             {
                                 "name": "new-desc",
                                 "description": "The new description",
@@ -1252,6 +1270,12 @@
                         "type": "SUB_COMMAND",
                         "options": [
                             {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
                                 "name": "new-size",
                                 "description": "The new size",
                                 "type": "INTEGER",
@@ -1264,6 +1288,12 @@
                         "description": "Edit the role to ping",
                         "type": "SUB_COMMAND",
                         "options": [
+                            {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
                             {
                                 "name": "new-role",
                                 "description": "The new role, leave blank for none",
@@ -1280,9 +1310,9 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
-                        "name": "id",
-                        "description": "The id of the activity, located in the embed",
-                        "type": "INTEGER",
+                        "name": "messageid",
+                        "description": "The id of the LFG Embed Message",
+                        "type": "STRING",
                         "required": true
                     }
                 ]
