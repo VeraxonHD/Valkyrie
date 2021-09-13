@@ -558,7 +558,7 @@ client.on("ready", async () =>{
     
     //Set Presence
     //client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
-    client.user.setActivity(`Ver ${package.version} | Serving ${client.users.cache.size} members on ${client.guilds.cache.size} guilds`, {type: "PLAYING"})
+    client.user.setActivity(`Ver ${package.version} | Serving > ${client.users.cache.size} members on > ${client.guilds.cache.size} guilds`, {type: "PLAYING"})
     
     //Register Global Commands
     const cmds = await client.application.commands.set(commands);
