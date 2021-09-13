@@ -18,23 +18,22 @@ exports.execute = (interaction) =>{
     if(member.permissions.has("ADMINISTRATOR") == false){
         return interaction.reply("Code 102 - Invalid Permissions. You are missing permission ADMINISTRATOR");
     }
-    if(args[0].name == "init"){
-        //Argument Handling
-        var channelID;
-        var messageText = "Select one of the Emoji below to recieve the corresponding role.";
-        args[0].options.forEach(arg =>{
-            if(arg.name == "channel"){
-                channelID = arg.value;
-            }else if(arg.name == "message"){
-                messageText = arg.value;
-            }
-        });
 
-        var rrChannel = guild.channels.cache.get(channelID);
+    const subcommandGroup = args._group;
+    const subcommand = args.getSubcommand();
+
+    if(subcommand == "init"){
+        //Argument Handling
+        var rrChannel = args.getChannel("channel");
+        var messageText = args.getString("message");
+        if(!messageText){
+            messageText = "Select one of the Emoji below to recieve the corresponding role.";
+        }
+
         const embed = new Discord.MessageEmbed()
                 .setAuthor(messageText)
                 .setColor("ORANGE");
-        rrChannel.send({embed}).then(rrMsg =>{
+        rrChannel.send({embeds: [embed]}).then(rrMsg =>{
             ReactionRoles.create({
                 guildID: guild.id,
                 channelID: rrMsg.channel.id,
@@ -50,20 +49,10 @@ exports.execute = (interaction) =>{
             console.log(e);
             return interaction.reply("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
         });
-    }else if(args[0].name == "add"){
-        var messageID;
-        var reactionEmoji;
-        var roleID;
-
-        args[0].options.forEach(arg => {
-            if(arg.name == "messageid"){
-                messageID = arg.value;
-            }else if(arg.name == "reactionemoji"){
-                reactionEmoji = arg.value;
-            }else if(arg.name == "role"){
-                roleID = arg.value;
-            }
-        });
+    }else if(subcommand == "add"){
+        var messageID = args.getString("messageid");
+        var reactionEmoji = args.getString("reactionemoji");
+        var reactionRole = args.getRole("role");
 
         ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
             var rrGuild = client.guilds.cache.get(row.guildID);
@@ -72,14 +61,13 @@ exports.execute = (interaction) =>{
 
             rrChannel.messages.fetch(row.messageID).then(rrMessage =>{
                 var rrEmoji = client.emojis.resolve(reactionEmoji.split(":")[2].split(">")[0]);
-                var rrRole = rrGuild.roles.resolve(roleID);
                 if(rrMessage){
                     if(rrEmoji){
-                        if(rrRole){
+                        if(reactionRole){
                             rrMessage.react(rrEmoji).then(async m =>{
                                 rrData[rrEmoji.id] = {
                                     "emojiID": rrEmoji.id,
-                                    "roleID": rrRole.id,
+                                    "roleID": reactionRole.id,
                                     "messageID": rrMessage.id
                                 }
                                 ReactionRoles.update({reactions: rrData}, {where: {messageID: rrMessage.id}});
@@ -98,8 +86,8 @@ exports.execute = (interaction) =>{
                 }
             })
         })
-    }else if(args[0].name == "delete"){
-        var messageID = args[0].options[0].value
+    }else if(subcommand == "delete"){
+        var messageID = args.getString("messageid")
 
         ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
             var rrGuild = client.guilds.cache.get(row.guildID);

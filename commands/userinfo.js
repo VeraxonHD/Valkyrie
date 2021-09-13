@@ -16,14 +16,17 @@ exports.execute = (interaction) => {
     const GuildUsers = main.getGuildUsersTable();
     const client = main.getClient();
 
+    var memberID = args.getMember("member")? args.getMember("member").id: null;
+    var userID = args.getString("userid")? args.getString("userid") : null;
     var targetID;
-    if(args.length != 0){
-        if(!member.permissions.has("MANAGE_MESSAGES")){
-            return interaction.reply("Error 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES")
-        }else{
-            targetID = args[0].value;
-        }
-    }else{
+
+    console.log(memberID);
+    console.log(userID)
+    if(memberID){
+        targetID = memberID;
+    }else if(userID){
+        targetID = userID;
+    }else if(!memberID && !userID){
         targetID = member.id;
     }
 

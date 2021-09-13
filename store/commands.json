@@ -296,6 +296,11 @@
                         "type": "STRING"
                     }
                 ]
+            },
+            {
+                "name": "list",
+                "description": "List all current config settings",
+                "type": "SUB_COMMAND"
             }
         ]
     },
@@ -464,7 +469,7 @@
                                 "type": "ROLE"
                             },
                             {
-                                "name": "userid",
+                                "name": "member",
                                 "description": "@Mention of the user to enable/disable access.",
                                 "type": "USER"
                             }
@@ -1152,6 +1157,196 @@
                         "name": "list",
                         "description": "Add an exempt user",
                         "type": "SUB_COMMAND"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "lfg",
+        "description": "Interact with the LFG system",
+        "options": [
+            {
+                "name": "create",
+                "description": "Create an LFG Post",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "name",
+                        "description": "The name of the event",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "time",
+                        "description": "Date/Time of event. Format: yyyy/mm/dd hh:mm (will convert to local time by default, or add GMT±?)",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "description",
+                        "description": "A short description of the event",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "group-size",
+                        "description": "The maximum size of the LFG Group",
+                        "type": "INTEGER",
+                        "required": true
+                    },
+                    {
+                        "name": "ping",
+                        "description": "Set a role to ping when the event is made. Leave blank for no ping",
+                        "type": "ROLE"
+                    }                   
+                ]
+            },
+            {
+                "name": "edit",
+                "description": "Edit an existing event",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "name",
+                        "description": "Edit the name of the activity",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "new-name",
+                                "description": "The new name",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "time",
+                        "description": "Edit the time/date of the activity",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "new-time",
+                                "description": "Date/Time of event. Format: yyyy/mm/dd hh:mm (will convert to local time by default, or add GMT±?)",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "description",
+                        "description": "Edit the description of the activity",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "new-desc",
+                                "description": "The new description",
+                                "type": "STRING",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "group-size",
+                        "description": "Edit the size of the activity",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "new-size",
+                                "description": "The new size",
+                                "type": "INTEGER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "role",
+                        "description": "Edit the role to ping",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "messageid",
+                                "description": "ID Of the existing LFG message embed to edit",
+                                "type": "STRING",
+                                "required": true
+                            },
+                            {
+                                "name": "new-role",
+                                "description": "The new role, leave blank for none",
+                                "type": "ROLE",
+                                "required": false
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "delete",
+                "description": "Delete an event",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageid",
+                        "description": "The id of the LFG Embed Message",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "reputation",
+                "description": "Add or remove a rep point for an user after their event",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "plusrep",
+                        "description": "Vote a user up after their event.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "id",
+                                "description": "The ID of the event that has been completed",
+                                "type": "INTEGER",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "minrep",
+                        "description": "Vote a user down after their event.",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "id",
+                                "description": "The ID of the event that has been completed",
+                                "type": "INTEGER",
+                                "required": true
+                            }
+                        ]
                     }
                 ]
             }

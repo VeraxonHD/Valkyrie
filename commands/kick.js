@@ -20,22 +20,20 @@ exports.execute = async (interaction) => {
     }else if(member.permissions.has("KICK_MEMBERS") == false){
         return interaction.reply("Code 103 - Invalid Permissions. You are missing permission KICK_MEMBERS")
     }else{
-        var targetID;
-        var reason = "No Reason Specified";
-        args[0].options.forEach(arg => {
-            if(arg.name == "member" || arg.name == "userid"){
-                targetID = arg.value;
-            }else if(arg.name == "reason"){
-                reason = arg.value;
-            }
-        });
+        var targetID = args.getMember("member")? args.getMember("member").id: args.getString("userid");
+        var reason = args.getString("reason");
+        if(!reason){
+            reason = "No reason specified"
+        }
 
         guild.members.fetch(targetID).then(async targetMember =>{
             if(targetMember.kickable){
                 targetMember.kick(reason);
-                interaction.reply(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}.`)
+                interaction.reply(`User ${targetMember.displayName} was kicked from the server. Reason: ${reason}`);
                 Configs.findOne({where:{guildID: guild.id}}).then(async guildConfig => {
-                    guild.channels.resolve(guildConfig.logChannelID).send(await logs.logKick(targetMember, reason, member, guild));
+                    const embed = await logs.logKick(targetMember, reason, member, guild);
+                    const logchannel = await guild.channels.resolve(guildConfig.logChannelID);
+                    logchannel.send({embeds: [embed]});
                 }).then(()=>{
                     var guildUserCompositeKey = guild.id + targetID
                     Users.increment("globalKickCount",{where:{userID: targetID}});

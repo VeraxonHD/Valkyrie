@@ -22,18 +22,12 @@ exports.execute = async (interaction) => {
     }else if(member.permissions.has("MANAGE_MESSAGES") == false){
         return interaction.reply("Code 103 - Invalid Permissions. You are missing permission MANAGE_MESSAGES")
     }else{
-        var targetID;
-        var duration = -1;
-        var reason = "No Reason Specified";
-        args[0].options.forEach(arg => {
-            if(arg.name == "member" || arg.name == "userid"){
-                targetID = arg.value;
-            }else if(arg.name == "duration"){
-                duration = arg.value;
-            }else if(arg.name == "reason"){
-                reason = arg.value;
-            }
-        });
+        var targetID = args.getMember("member")? args.getMember("member").id: args.getString("userid");
+        var duration = args.getString("duration")? args.getString("duration"): -1;
+        var reason = args.getString("reason");
+        if(!reason){
+            reason = "No reason specified"
+        }
 
         var endsTimestamp;
         try{
@@ -71,7 +65,9 @@ exports.execute = async (interaction) => {
                         interaction.reply("Code 110 - Unknown Error with Database.");
                         console.log(e);
                     });
-                    guild.channels.resolve(guildConfig.logChannelID).send(await logs.logMute(targetMember, duration, reason, member, guild));
+                    const logchannel = await guild.channels.resolve(guildConfig.logChannelID);
+                    const embed = await logs.logMute(targetMember, duration, reason, member, guild);
+                    return logchannel.send({embeds: [embed]});
                 }).catch(e=>{
                     console.log(e);
                     return interaction.reply("Code 100 - Failed to add Mute Role to User.");

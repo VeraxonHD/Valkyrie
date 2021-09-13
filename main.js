@@ -14,7 +14,7 @@ const commands = require("./store/commands.json");
 //Globals
 const client = new Discord.Client({
     partials: ["MESSAGE", "REACTION", "CHANNEL"],
-    intents: ["GUILDS", "GUILD_MEMBERS", "GUILD_PRESENCES", "GUILD_EMOJIS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]
+    intents: ["GUILDS", "GUILD_MEMBERS", "GUILD_PRESENCES", "GUILD_EMOJIS_AND_STICKERS", "GUILD_MESSAGE_REACTIONS", "GUILD_BANS", "GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILD_MESSAGE_TYPING"]
 });
 const sequelize = new Sequelize({
     dialect: "sqlite",
@@ -319,6 +319,75 @@ const BlacklistExemptions = sequelize.define("BlacklistExemptions", {
         allowNull: false
     }
 })
+const LFGroups = sequelize.define("LFGroups", {
+    groupID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    messageID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    channelID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    creatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    time: {
+        type: DataTypes.BIGINT,
+        allowNull: false
+    },
+    description: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    groupSize: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    pingRole: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    notified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false
+    }
+})
+
+const LFGParticipants = sequelize.define("LFGParticipants", {
+    participantID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    messageID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    commitmentType: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    }
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -357,13 +426,19 @@ exports.getBlacklistsTable = () => {
 exports.getBlacklistExemptionsTable = () => {
     return BlacklistExemptions;
 }
+exports.getLFGroupsTable = () =>{
+    return LFGroups;
+}
+exports.getLFGParticipantsTable = () =>{
+    return LFGParticipants;
+}
 //Client Getter
 exports.getClient = () =>{
     return client;
 }
 
 //Automated/Frquent Functions
-client.setInterval(async () => {
+const interval = setInterval(function() {
     //Automated Umute Handling
     Mutes.findAll({where: {endsAt: {[Op.and]: [{[Op.lte]: Date.now(), [Op.ne]: "-1"}]}}}).then(async rows =>{
         rows.forEach(row => {
@@ -390,6 +465,66 @@ client.setInterval(async () => {
             });
         });
     });
+
+    //LFG Group checks
+    LFGroups.findAll().then(groups => {
+        if(groups.length > 0){
+            groups.forEach(group => {
+                if(group.notified == false){
+                    if(group.time - 600 < Date.now().valueOf()/1000 && Date.now().valueOf()/1000 < group.time){
+                        const lfgGuild = client.guilds.resolve(group.guildID);
+                        if(!lfgGuild){
+                            console.log(`LFG Guild ${group.guildID} does not exist. Deleting record...`);
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                                participants.forEach(part => {
+                                    part.destroy();
+                                })
+                            })
+                            return group.destroy();
+                        }
+
+                        const lfgChannel = lfgGuild.channels.resolve(group.channelID);
+                        if(!lfgChannel){
+                            console.log(`LFG Channel ${group.channelID} does not exist. Deleting record...`);
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                                participants.forEach(part => {
+                                    part.destroy();
+                                })
+                            })
+                            return group.destroy();
+                        }
+
+                        const lfgMessage = lfgChannel.messages.fetch(group.messageID).catch(err => { 
+                            console.log(`LFG Message ${group.messageID} does not exist. Deleting record...`);
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                                participants.forEach(part => {
+                                    part.destroy();
+                                })
+                            })
+                            return group.destroy();
+                        });
+
+                        LFGParticipants.findAll({where: {messageID: group.messageID}}).then(participants => {
+                            if(participants.length > 0){
+                                participants.forEach(participant => {
+                                    const lfgParticipant = lfgGuild.members.resolve(participant.memberID);
+                                    if(!lfgParticipant){ console.log(`LFG Participant ${participant.memberID} does not exist. Deleting record...`); participant.destroy(); }
+                                    
+                                    try{
+                                        lfgParticipant.send(`Hello! You're receiving this notification because you've signed up for the event **${group.name}** in **${lfgGuild.name}**, which is scheduled to start in ~10 minutes.`);
+                                    }catch(err){
+                                        console.log(`Could not send LFG reminder message to user ${lfgParticipant.tag} - see error below`);
+                                        console.error(err);
+                                    }                   
+                                })
+                            }
+                        })
+                        LFGroups.update({notified: true}, {where: {messageID: group.messageID}});
+                    }
+                }
+            });
+        }
+    })
 }, 2000);
 
 /**==============
@@ -400,7 +535,7 @@ client.setInterval(async () => {
 * 'ready' event - Called when bot is connected to the API.
 */
 client.on("ready", async () =>{
-    console.log("Bot Loaded.");
+    console.log("[VALKYRIE] Bot Loaded.");
     
     //Sync Database Tables
     await Configs.sync();
@@ -416,10 +551,14 @@ client.on("ready", async () =>{
     await Dividers.sync();
     await Blacklists.sync();
     await BlacklistExemptions.sync();
+    await LFGroups.sync();
+    await LFGParticipants.sync();
+
+    console.log("[VALKYRIE] Tables Loaded.")
     
     //Set Presence
     //client.user.setPresence({ activity: { name: `Ver: ${package.version}` }, status: 'online' });
-    client.user.setActivity(`Ver ${package.version} | Serving ${client.users.cache.size} members on ${client.guilds.cache.size} guilds`, {type: "PLAYING"})
+    client.user.setActivity(`Ver ${package.version} | Serving > ${client.users.cache.size} members on > ${client.guilds.cache.size} guilds`, {type: "PLAYING"})
     
     //Register Global Commands
     const cmds = await client.application.commands.set(commands);
@@ -441,7 +580,9 @@ client.on("ready", async () =>{
 * 'interactionCreate' - Called when a user runs a slash-command.
 * @param interaction - The interaction object from the API
 */
-client.on("interaction", (interaction) =>{
+client.on("interactionCreate", (interaction) =>{
+    if(!interaction.isCommand()){ return; }
+
     var cmdFile = require(`./commands/${interaction.commandName}.js`);
     if(!cmdFile){
         return;
@@ -464,7 +605,7 @@ client.on("guildCreate", async (guild) =>{
     
     Configs.create({
         guildID: guild.id,
-        ownerID: guild.ownerID,
+        ownerID: guild.ownerId,
         logTypes: {
             usermigration: true,
             messagedelete: true,
@@ -475,7 +616,7 @@ client.on("guildCreate", async (guild) =>{
     }).then( () =>{
         console.log(`Joined Guild ${guild.name} (${guild.id}) successfully.`);
         client.guilds.fetch("409365548766461952").then(devGuild => {
-            devGuild.channels.resolve("742885805449805945").send(`I joined a new server! Name: ${guild.name}, ID: ${guild.id}, Owner: <@${guild.ownerID}>`);
+            devGuild.channels.resolve("742885805449805945").send(`I joined a new server! Name: ${guild.name}, ID: ${guild.id}, Owner: <@${guild.ownerId}>`);
         })
     }
     ).catch(console.log)
@@ -516,7 +657,7 @@ client.on("guildCreate", async (guild) =>{
         try{
             guild.channels.create("logchannel", {
                 data: {
-                    type: "text",
+                    type: "GUILD_TEXT",
                     topic: "Log channel for Valkyrie",
                     reason: "Automatically created a Log Channel. If you have one already, please use /config to point to that role. Else, feel free to edit this channel however you please."
                 },
@@ -554,8 +695,8 @@ client.on("guildCreate", async (guild) =>{
         embed.addField("I couldn't find or create a log channel", "If you already have one, use `/config logchannel` to change the server config");
     }
     
-    guild.members.fetch(guild.ownerID).then(guildOwner =>{
-        guildOwner.send({embed})
+    guild.members.fetch(guild.ownerId).then(guildOwner =>{
+        guildOwner.send({embeds: [embed]})
     });
 })
 
@@ -563,9 +704,9 @@ client.on("guildCreate", async (guild) =>{
 * 'message' - Called when a message is sent in a monitored Guild
 * @param message - The message object
 */
-client.on("message", async (message) =>{
+client.on("messageCreate", async (message) =>{
     if(message.author.id == client.user.id){ return }
-    if(message.channel.type === "text" && message.author.id != client.user.id){
+    if(message.channel.type === "GUILD_TEXT" && message.author.id != client.user.id){
         var guildUserCompositeKey = message.guild.id + message.author.id;
         Users.findOne({where: {userID: message.author.id}}).then(user => {
             if(!user){
@@ -702,27 +843,25 @@ client.on("message", async (message) =>{
                 Tags.findOne({where: {[Op.and]: [{guildID: message.guild.id}, {name: tagFromMsg}]}}).then(tag =>{
                     if(tag){
                         var channelAccess, roleAccess, memberAccess = false;
+                        var roleLength = tag.access.roles.length;
+                        var memberLength = tag.access.members.length;
                         
-                        if(tag.access.channels.includes(message.channel.id) || tag.access.channels.length == 0){
+                        if(tag.access.channels.includes(message.channel.id)){
                             channelAccess = true;
                         }
                         
-                        if(tag.access.roles.length == 0){
-                            roleAccess = true;
-                        }else{
-                            tag.access.roles.forEach(role =>{
-                                if(message.member.roles.cache.has(role)){
-                                    roleAccess = true;
-                                    return;
-                                }
-                            });
-                        }
+                        tag.access.roles.forEach(role =>{
+                            if(message.member.roles.cache.has(role)){
+                                roleAccess = true;
+                                return;
+                            }
+                        });
                         
-                        if(tag.access.members.includes(message.member.id) || tag.access.members.length == 0){
+                        if(tag.access.members.includes(message.member.id)){
                             memberAccess = true;
                         }
                         
-                        if(channelAccess && roleAccess && memberAccess){
+                        if(channelAccess && ((tag.access.roles.length == 0 && tag.access.members.length != 0 && memberAccess) || (tag.access.roles.length == 0 && tag.access.members.length == 0) || (tag.access.members.length == 0 && tag.access.roles.length != 0 && roleAccess) || (tag.access.roles.length != 0 && tag.access.members.length != 0 && memberAccess && roleAccess) || (roleAccess || memberAccess))){
                             var response = tag.response;
                             
                             response = response.replace(/%AUTH/g, message.member.displayName);
@@ -770,17 +909,164 @@ client.on("messageReactionAdd", async (messageReaction, user) => {
     var emojiID = messageReaction.emoji.id;
     
     ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
-        if(!row) return;
-        var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
+        if(row){
+            var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
         
-        try{
-            message.guild.members.fetch(user.id).then(member =>{
-                member.roles.add(role);
-            })
-        }catch(e){
-            console.log(e);
+            try{
+                message.guild.members.fetch(user.id).then(member =>{
+                    member.roles.add(role);
+                })
+            }catch(e){
+                console.log(e);
+            }
         }
-    })
+    });
+
+    LFGroups.findOne({where: {messageID: message.id}}).then(group => {
+        if(group){
+            if(messageReaction.emoji.name == '✅'){
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
+                    if(!participant){
+                        LFGParticipants.create({
+                            messageID: group.messageID,
+                            memberID: user.id,
+                            commitmentType: 0
+                        }).then(() =>{
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+                                var newParticipants;
+
+                                if(participantsField.value == "None" && participantsField.value.length == 4){
+                                    newParticipants = [];
+                                }else{
+                                    newParticipants = participantsField.value.split(" | ");
+                                }
+
+                                newParticipants.push(user.tag)
+
+                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants.join(" | "), inline: true}
+
+                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
+
+                                message.edit({embeds: [embed]});
+                            })
+                            
+                        })
+                    }
+                    messageReaction.users.remove(user.id);
+                })
+            }else if(messageReaction.emoji.name == '❎'){
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
+                    if(participant){
+                        if(participant.commitmentType == 0){
+                            participant.destroy();
+                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 0}]}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+
+                                var currentParticipants = participantsField.value.split(" | ")
+
+                                var newParticipants = [];
+                                currentParticipants.forEach(part => {
+                                    if(!part.includes(user.tag)){
+                                        newParticipants.push(part)
+                                    }
+                                })
+
+                                if(newParticipants.length == 0){
+                                    newParticipants = "None"
+                                }else{
+                                    newParticipants = newParticipants.join(" | ")
+                                }
+
+                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants, inline: true}
+
+                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
+
+                                message.edit({embeds: [embed]});
+                            })
+                        }else{
+                            participant.destroy();
+                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 1}]}}).then(allSubstitutes => {
+                                var embed = message.embeds[0];
+                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
+
+                                var currentSubstitutes = substitutesField.value.split(" | ")
+
+                                var newSubstitutes = [];
+                                currentSubstitutes.forEach(part => {
+                                    if(!part.includes(user.tag)){
+                                        newSubstitutes.push(part)
+                                    }
+                                })
+
+                                if(newSubstitutes.length == 0){
+                                    newSubstitutes = "None"
+                                }else{
+                                    newSubstitutes = newSubstitutes.join(" | ")
+                                }
+
+                                var newField = {name: `Substitutes:`, value: newSubstitutes, inline: true}
+
+                                embed.fields[embed.fields.indexOf(substitutesField)] = newField;
+
+                                message.edit({embeds: [embed]});
+                            })
+                        }
+                    }
+                    messageReaction.users.remove(user.id);
+                })
+            }else if(messageReaction.emoji.name == '❓'){
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
+                    if(!participant){
+                        LFGParticipants.create({
+                            messageID: group.messageID,
+                            memberID: user.id,
+                            commitmentType: 1
+                        }).then(() =>{
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
+
+                                var newParticipants = [];
+
+                                if(!substitutesField){
+                                    newParticipants.push(user.tag)
+                                    substitutesField = {name: "Substitutes:", value: newParticipants.join(" | "), inline: true}
+                                    embed.spliceFields(embed.fields.indexOf(participantsField)+1, 0, substitutesField);
+                                }else{
+                                    if(substitutesField.value == "None" && substitutesField.value.length == 4){
+                                        newParticipants = [];
+                                    }else{
+                                        newParticipants = substitutesField.value.split(" | ");
+                                    }
+    
+                                    newParticipants.push(user.tag);
+    
+                                    var newField = {name: `Substitutes:`, value: newParticipants.join(" | "), inline: true}
+                                    embed.fields[embed.fields.indexOf(substitutesField)] = newField;
+                                }
+
+                                message.edit({embeds: [embed]});
+                            })
+                        })
+                    }
+                    messageReaction.users.remove(user.id);
+                })
+            }
+        }
+    });
 });
 
 /**
@@ -797,15 +1083,16 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
     var emojiID = messageReaction.emoji.id;
     
     ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
-        if(!row) return;
-        var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
+        if(row){
+            var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
         
-        try{
-            message.guild.members.fetch(user.id).then(member =>{
-                member.roles.remove(role);
-            })
-        }catch(e){
-            console.log(e);
+            try{
+                message.guild.members.fetch(user.id).then(member =>{
+                    member.roles.remove(role);
+                })
+            }catch(e){
+                console.log(e);
+            }
         }
     })
 });
@@ -856,7 +1143,7 @@ client.on("messageDelete", async (message) =>{
             embed.addField("Message Attachment URLs", attachments)
         }
         
-        return logchannel.send({embed});
+        return logchannel.send({embeds: [embed]});
     }
 });
 
@@ -904,7 +1191,7 @@ client.on("messageUpdate", async (oldMessage, newMessage) =>{
                 embed.addField("Message Attachment URLs", attachments)
             }
             
-            return logchannel.send({embed});
+            return logchannel.send({embeds: [embed]});
         }
     }else{
         return;
@@ -928,7 +1215,7 @@ client.on("guildMemberAdd", async (member) => {
             .addField(`Welcome to ${guild.name}!`, row.welcomeMessage)
             .setColor("GREEN");
             try{
-                member.send({embed});
+                member.send({embeds: [embed]});
             }catch(e){
                 console.log("Tried sending welcome message to the user, but it was not successful");
             }
@@ -946,7 +1233,7 @@ client.on("guildMemberAdd", async (member) => {
             .setColor("DARK_GREEN")
             .setFooter("guildmemberadd.logs.valkyrie")
             .setTimestamp(new Date());
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
 });
@@ -969,7 +1256,7 @@ client.on("guildMemberRemove", async (member) => {
             .setColor("DARK_RED")
             .setFooter("guildmemberremove.logs.valkyrie")
             .setTimestamp(new Date());
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
 })
@@ -1042,12 +1329,12 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
             .setTimestamp(new Date());
             
             if(oldMember.roles.cache.has(role.id) && !newMember.roles.cache.has(role.id)){
-                embed.addField("Role Removed", role)
+                embed.addField("Role Removed", role.toString())
             }else if(!oldMember.roles.cache.has(role.id) && newMember.roles.cache.has(role.id)){
-                embed.addField("Role Added", role)
+                embed.addField("Role Added", role.toString())
             }
             
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
 })
@@ -1081,7 +1368,7 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
             }else if(!newState.channel){ //If a member disconnects from voice entirely
                 embed.addField("Member Left Channel", `**${oldState.channel.name}**`)
             }
-            logchannel.send({embed});
+            logchannel.send({embeds: [embed]});
         }
     }
     
@@ -1119,7 +1406,7 @@ async function checkHubThenCreate(newState){
                 }else{
                     var lobbyChannelParent = guild.channels.cache.get(lobbyhub.lobbyHubParentID);
                     guild.channels.create(`${member.displayName}'s Lobby`, {
-                        type: "voice",
+                        type: "GUILD_VOICE",
                         parent: lobbyChannelParent
                     }).then(async newLobby =>{
                         Lobbies.create({
