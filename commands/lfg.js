@@ -76,6 +76,9 @@ exports.execute = async (interaction) => {
             const newName = args.getString("new-name");
             LFGroups.findOne({where: {messageID: lfgEmbedID}}).then(async row =>{
                 if(row){
+                    if(member.id != row.creatorID){
+                        return interaction.reply({content: "Error - you do not own this LFG Post, and therefore are unauthorized to edit it.", ephemeral: true});
+                    }
                     const lfgEmbedChannel = await guild.channels.resolve(row.channelID);
                     if(!lfgEmbedChannel){ return interaction.reply({content: "Code 102 - The channel that the LFG embed message used to exist in no longer exists.", ephemeral: true})}
                     const lfgEmbedMessage = await lfgEmbedChannel.messages.fetch(lfgEmbedID);
@@ -102,6 +105,9 @@ exports.execute = async (interaction) => {
             const newTime = args.getString("new-time");
             LFGroups.findOne({where: {messageID: lfgEmbedID}}).then(async row =>{
                 if(row){
+                    if(member.id != row.creatorID){
+                        return interaction.reply({content: "Error - you do not own this LFG Post, and therefore are unauthorized to edit it.", ephemeral: true});
+                    }
                     const lfgEmbedChannel = await guild.channels.resolve(row.channelID);
                     if(!lfgEmbedChannel){ return interaction.reply({content: "Code 102 - The channel that the LFG embed message used to exist in no longer exists.", ephemeral: true})}
                     const lfgEmbedMessage = await lfgEmbedChannel.messages.fetch(lfgEmbedID);
@@ -134,6 +140,9 @@ exports.execute = async (interaction) => {
             const newDesc = args.getString("new-desc");
             LFGroups.findOne({where: {messageID: lfgEmbedID}}).then(async row =>{
                 if(row){
+                    if(member.id != row.creatorID){
+                        return interaction.reply({content: "Error - you do not own this LFG Post, and therefore are unauthorized to edit it.", ephemeral: true});
+                    }
                     const lfgEmbedChannel = await guild.channels.resolve(row.channelID);
                     if(!lfgEmbedChannel){ return interaction.reply({content: "Code 102 - The channel that the LFG embed message used to exist in no longer exists.", ephemeral: true})}
                     const lfgEmbedMessage = await lfgEmbedChannel.messages.fetch(lfgEmbedID);
@@ -160,6 +169,9 @@ exports.execute = async (interaction) => {
             const newSize = args.getInteger("new-size");
             LFGroups.findOne({where: {messageID: lfgEmbedID}}).then(async row =>{
                 if(row){
+                    if(member.id != row.creatorID){
+                        return interaction.reply({content: "Error - you do not own this LFG Post, and therefore are unauthorized to edit it.", ephemeral: true});
+                    }
                     const lfgEmbedChannel = await guild.channels.resolve(row.channelID);
                     if(!lfgEmbedChannel){ return interaction.reply({content: "Code 102 - The channel that the LFG embed message used to exist in no longer exists.", ephemeral: true})}
                     const lfgEmbedMessage = await lfgEmbedChannel.messages.fetch(lfgEmbedID);
@@ -190,6 +202,9 @@ exports.execute = async (interaction) => {
         const lfgEmbedID = args.getString("messageid");
         LFGroups.findOne({where: {messageID: lfgEmbedID}}).then(async row =>{
             if(row){
+                if(member.id != row.creatorID){
+                    return interaction.reply({content: "Error - you do not own this LFG Post, and therefore are unauthorized to edit it.", ephemeral: true});
+                }
                 const lfgEmbedChannel = await guild.channels.resolve(row.channelID);
                 if(!lfgEmbedChannel){ return interaction.reply({content: "Code 102 - The channel that the LFG embed message used to exist in no longer exists.", ephemeral: true})}
                 const lfgEmbedMessage = await lfgEmbedChannel.messages.fetch(lfgEmbedID);
@@ -208,6 +223,6 @@ exports.execute = async (interaction) => {
             }
         })
     }else if(subcommandGroup == null && subcommand == "reputation"){
-
+        return interaction.reply({content: "LFG Reputation is not yet implemented.", ephemeral: true});
     }
 }
