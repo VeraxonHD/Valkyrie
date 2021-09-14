@@ -866,7 +866,7 @@ client.on("messageCreate", async (message) =>{
                         var roleLength = tag.access.roles.length;
                         var memberLength = tag.access.members.length;
                         
-                        if(tag.access.channels.includes(message.channel.id)){
+                        if(tag.access.channels.includes(message.channel.id) || tag.access.channels.length == 0){
                             channelAccess = true;
                         }
                         
