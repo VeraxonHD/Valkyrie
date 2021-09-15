@@ -39,12 +39,25 @@ exports.execute = async (interaction) => {
             .setTimestamp(new Date())
             .setFooter("lfg.valkyrie")
 
-        channel.send({embeds: [embed]}).then(msg => {
-            msg.react('✅').then(() => {
-                msg.react('❎').then(() => {
-                    msg.react('❓');
-                })
-            })
+        const buttonRow = new Discord.MessageActionRow()
+            .addComponents(
+                new Discord.MessageButton()
+                    .setCustomId("lfgJoin")
+                    .setLabel("Join")
+                    .setStyle("SUCCESS"),
+                new Discord.MessageButton()
+                    .setCustomId("lfgLeave")
+                    .setLabel("Leave")
+                    .setStyle("DANGER"),
+                new Discord.MessageButton()
+                    .setCustomId("lfgSubstitute")
+                    .setLabel("Substitute")
+                    .setStyle("SECONDARY")                
+            )
+
+        channel.send({embeds: [embed], components: [buttonRow]}).then(async msg => {
+            embed.setFooter(`lfg.valkyrie | Message ID: ${msg.id}`);
+            await msg.edit({embeds: [embed]})
             LFGroups.create({
                 guildID: guild.id,
                 messageID: msg.id,

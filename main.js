@@ -601,18 +601,171 @@ client.on("ready", async () =>{
 * @param interaction - The interaction object from the API
 */
 client.on("interactionCreate", (interaction) =>{
-    if(!interaction.isCommand()){ return; }
-
-    var cmdFile = require(`./commands/${interaction.commandName}.js`);
-    if(!cmdFile){
-        return;
-    }else{
-        try{
-            cmdFile.execute(interaction);
-        }catch(e){
-            console.log(e);
+    if(interaction.isCommand()){
+        var cmdFile = require(`./commands/${interaction.commandName}.js`);
+        if(!cmdFile){
+            return;
+        }else{
+            try{
+                cmdFile.execute(interaction);
+            }catch(e){
+                console.log(e);
+            }
+        }
+    }else if(interaction.isButton()){
+        //console.log(interaction)
+        if(interaction.customId == "lfgJoin"){
+            LFGroups.findOne({where: {messageID: interaction.message.id}}).then(group => {
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: interaction.user.id}]}}).then(participant => {
+                    if(!participant){
+                        LFGParticipants.create({
+                            messageID: group.messageID,
+                            memberID: interaction.user.id,
+                            commitmentType: 0
+                        }).then(() =>{
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = interaction.message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+                                var newParticipants;
+    
+                                if(participantsField.value == "None" && participantsField.value.length == 4){
+                                    newParticipants = [];
+                                }else{
+                                    newParticipants = participantsField.value.split(" | ");
+                                }
+    
+                                newParticipants.push(interaction.user.tag)
+    
+                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants.join(" | "), inline: true}
+    
+                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
+    
+                                interaction.message.edit({embeds: [embed]});
+                                return interaction.reply({content:"You successfully joined this activity!", ephemeral: true});
+                            })
+                            
+                        })
+                    }else{
+                        return interaction.reply({content: "You have already signed up for this event!", ephemeral: true});
+                    }
+                })
+            });
+        }else if(interaction.customId == "lfgLeave"){
+            LFGroups.findOne({where: {messageID: interaction.message.id}}).then(group => {
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: interaction.user.id}]}}).then(participant => {
+                    if(participant){
+                        if(participant.commitmentType == 0){
+                            participant.destroy();
+                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 0}]}}).then(allParticipants => {
+                                var currentSize = allParticipants.length;
+                                var maxSize = group.groupSize;
+        
+                                var embed = interaction.message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+    
+                                var currentParticipants = participantsField.value.split(" | ")
+    
+                                var newParticipants = [];
+                                currentParticipants.forEach(part => {
+                                    if(!part.includes(interaction.user.tag)){
+                                        newParticipants.push(part)
+                                    }
+                                })
+    
+                                if(newParticipants.length == 0){
+                                    newParticipants = "None"
+                                }else{
+                                    newParticipants = newParticipants.join(" | ")
+                                }
+    
+                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants, inline: true}
+    
+                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
+    
+                                interaction.message.edit({embeds: [embed]});
+                                return interaction.reply({content: "You have successfully left this activity", ephemeral: true});
+                            })
+                        }else{
+                            participant.destroy();
+                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 1}]}}).then(allSubstitutes => {
+                                var embed = interaction.message.embeds[0];
+                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
+    
+                                var currentSubstitutes = substitutesField.value.split(" | ")
+    
+                                var newSubstitutes = [];
+                                currentSubstitutes.forEach(part => {
+                                    if(!part.includes(interaction.user.tag)){
+                                        newSubstitutes.push(part)
+                                    }
+                                })
+    
+                                if(newSubstitutes.length == 0){
+                                    newSubstitutes = "None"
+                                }else{
+                                    newSubstitutes = newSubstitutes.join(" | ")
+                                }
+    
+                                var newField = {name: `Substitutes:`, value: newSubstitutes, inline: true}
+    
+                                embed.fields[embed.fields.indexOf(substitutesField)] = newField;
+    
+                                interaction.message.edit({embeds: [embed]});
+                                return interaction.reply({content: "You have successfully left this activity", ephemeral: true});
+                            })
+                        }
+                    }
+                });
+            });
+        }else if(interaction.customId == "lfgSubstitute"){
+            LFGroups.findOne({where: {messageID: interaction.message.id}}).then(group => {
+                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: interaction.user.id}]}}).then(participant => {
+                    if(!participant){
+                        LFGParticipants.create({
+                            messageID: group.messageID,
+                            memberID: interaction.user.id,
+                            commitmentType: 1
+                        }).then(() =>{
+                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {        
+                                var embed = interaction.message.embeds[0];
+                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
+                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
+    
+                                var newParticipants = [];
+    
+                                if(!substitutesField){
+                                    newParticipants.push(interaction.user.tag)
+                                    substitutesField = {name: "Substitutes:", value: newParticipants.join(" | "), inline: true}
+                                    embed.spliceFields(embed.fields.indexOf(participantsField)+1, 0, substitutesField);
+                                }else{
+                                    if(substitutesField.value == "None" && substitutesField.value.length == 4){
+                                        newParticipants = [];
+                                    }else{
+                                        newParticipants = substitutesField.value.split(" | ");
+                                    }
+    
+                                    newParticipants.push(interaction.user.tag);
+    
+                                    var newField = {name: `Substitutes:`, value: newParticipants.join(" | "), inline: true}
+                                    embed.fields[embed.fields.indexOf(substitutesField)] = newField;
+                                }
+    
+                                interaction.message.edit({embeds: [embed]});
+                                return interaction.reply({content: "You have successfully joined this activity as a substitute.", ephemeral: true});
+                            })
+                        })
+                    }else{
+                        return interaction.reply({content: "You have already signed up for this event!", ephemeral: true});
+                    }
+                })
+            });
         }
     }
+
+    
 });
 
 /**
@@ -938,152 +1091,6 @@ client.on("messageReactionAdd", async (messageReaction, user) => {
                 })
             }catch(e){
                 console.log(e);
-            }
-        }
-    });
-
-    LFGroups.findOne({where: {messageID: message.id}}).then(group => {
-        if(group){
-            if(messageReaction.emoji.name == '✅'){
-                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
-                    if(!participant){
-                        LFGParticipants.create({
-                            messageID: group.messageID,
-                            memberID: user.id,
-                            commitmentType: 0
-                        }).then(() =>{
-                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
-                                var currentSize = allParticipants.length;
-                                var maxSize = group.groupSize;
-        
-                                var embed = message.embeds[0];
-                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
-                                var newParticipants;
-
-                                if(participantsField.value == "None" && participantsField.value.length == 4){
-                                    newParticipants = [];
-                                }else{
-                                    newParticipants = participantsField.value.split(" | ");
-                                }
-
-                                newParticipants.push(user.tag)
-
-                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants.join(" | "), inline: true}
-
-                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
-
-                                message.edit({embeds: [embed]});
-                            })
-                            
-                        })
-                    }
-                    messageReaction.users.remove(user.id);
-                })
-            }else if(messageReaction.emoji.name == '❎'){
-                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
-                    if(participant){
-                        if(participant.commitmentType == 0){
-                            participant.destroy();
-                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 0}]}}).then(allParticipants => {
-                                var currentSize = allParticipants.length;
-                                var maxSize = group.groupSize;
-        
-                                var embed = message.embeds[0];
-                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
-
-                                var currentParticipants = participantsField.value.split(" | ")
-
-                                var newParticipants = [];
-                                currentParticipants.forEach(part => {
-                                    if(!part.includes(user.tag)){
-                                        newParticipants.push(part)
-                                    }
-                                })
-
-                                if(newParticipants.length == 0){
-                                    newParticipants = "None"
-                                }else{
-                                    newParticipants = newParticipants.join(" | ")
-                                }
-
-                                var newField = {name: `Participants: ${currentSize}/${maxSize}`, value: newParticipants, inline: true}
-
-                                embed.fields[embed.fields.indexOf(participantsField)] = newField;
-
-                                message.edit({embeds: [embed]});
-                            })
-                        }else{
-                            participant.destroy();
-                            LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 1}]}}).then(allSubstitutes => {
-                                var embed = message.embeds[0];
-                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
-
-                                var currentSubstitutes = substitutesField.value.split(" | ")
-
-                                var newSubstitutes = [];
-                                currentSubstitutes.forEach(part => {
-                                    if(!part.includes(user.tag)){
-                                        newSubstitutes.push(part)
-                                    }
-                                })
-
-                                if(newSubstitutes.length == 0){
-                                    newSubstitutes = "None"
-                                }else{
-                                    newSubstitutes = newSubstitutes.join(" | ")
-                                }
-
-                                var newField = {name: `Substitutes:`, value: newSubstitutes, inline: true}
-
-                                embed.fields[embed.fields.indexOf(substitutesField)] = newField;
-
-                                message.edit({embeds: [embed]});
-                            })
-                        }
-                    }
-                    messageReaction.users.remove(user.id);
-                })
-            }else if(messageReaction.emoji.name == '❓'){
-                LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: user.id}]}}).then(participant => {
-                    if(!participant){
-                        LFGParticipants.create({
-                            messageID: group.messageID,
-                            memberID: user.id,
-                            commitmentType: 1
-                        }).then(() =>{
-                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
-                                var currentSize = allParticipants.length;
-                                var maxSize = group.groupSize;
-        
-                                var embed = message.embeds[0];
-                                var participantsField = embed.fields.find(element => element.name.includes("Participants"));
-                                var substitutesField = embed.fields.find(element => element.name.includes("Substitutes"));
-
-                                var newParticipants = [];
-
-                                if(!substitutesField){
-                                    newParticipants.push(user.tag)
-                                    substitutesField = {name: "Substitutes:", value: newParticipants.join(" | "), inline: true}
-                                    embed.spliceFields(embed.fields.indexOf(participantsField)+1, 0, substitutesField);
-                                }else{
-                                    if(substitutesField.value == "None" && substitutesField.value.length == 4){
-                                        newParticipants = [];
-                                    }else{
-                                        newParticipants = substitutesField.value.split(" | ");
-                                    }
-    
-                                    newParticipants.push(user.tag);
-    
-                                    var newField = {name: `Substitutes:`, value: newParticipants.join(" | "), inline: true}
-                                    embed.fields[embed.fields.indexOf(substitutesField)] = newField;
-                                }
-
-                                message.edit({embeds: [embed]});
-                            })
-                        })
-                    }
-                    messageReaction.users.remove(user.id);
-                })
             }
         }
     });
