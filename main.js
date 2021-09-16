@@ -769,8 +769,9 @@ client.on("interactionCreate", (interaction) =>{
 * @param guild - The guild object from the API
 */
 client.on("guildCreate", async (guild) =>{
-    var mutedRoleExists = true;
-    var logChannelExists = true;
+    var mutedRoleExists = false;
+    var logChannelExists = false;
+    const embed = new Discord.MessageEmbed();
     
     Configs.create({
         guildID: guild.id,
@@ -787,21 +788,25 @@ client.on("guildCreate", async (guild) =>{
         client.guilds.fetch("409365548766461952").then(devGuild => {
             devGuild.channels.resolve("742885805449805945").send(`I joined a new server! Name: ${guild.name}, ID: ${guild.id}, Owner: <@${guild.ownerId}>`);
         })
-    }
-    ).catch(console.log)
+    }).catch(err => {
+        if(err.name == "SequelizeUniqueConstraintError"){
+            console.log(`Attempted to write new guild to database, but ID was already present - ID: ${guild.id}`);
+        }else{
+            console.error(err)
+        }
+    })
     
     var mutedRole = guild.roles.cache.find(r => r.name.toLowerCase() == "muted");
     //Find or Create a 'Muted' Role.
     if(!mutedRole){
         try{
-            guild.roles.create({
-                data: {
-                    name: "Muted",
-                    color: "RED",
-                    reason: "Automatically created a Muted Role. If you have one already, please use /config to point to that role. Else, feel free to edit this role however you please."
-                }
-            }).then(newMutedRole => {
-                Configs.update({mutedRoleID: newMutedRole.id}, {where:{guildID: guild.id}}).then(() => {
+            await guild.roles.create({
+                name: "Muted",
+                color: "RED",
+                reason: "Automatically created a Muted Role. If you have one already, please use /config to point to that role. Else, feel free to edit this role however you please."
+            }).then(async newMutedRole => {
+                mutedRoleExists = true;
+                await Configs.update({mutedRoleID: newMutedRole.id}, {where:{guildID: guild.id}}).then(() => {
                     embed.addField("I automatically created a muted role", "Feel free to edit this role however you want!");
                 }).catch(e => {
                     console.log(e);
@@ -813,7 +818,8 @@ client.on("guildCreate", async (guild) =>{
             //return channel.send("Code 120 - Bot has insufficient Permissions to Create a Role.");
         }
     }else{
-        Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}}).then(() => {
+        mutedRoleExists = true;
+        await Configs.update({mutedRoleID: mutedRole.id}, {where:{guildID: guild.id}}).then(() => {
             embed.addField("I found an existing mute role", "You already had a role called 'Muted', so I set that as the role to apply when a member is muted.\nYou can edit this at any time with the command \`/config mutedrole\`");
         }).catch(e => {
             console.log(e);
@@ -824,14 +830,15 @@ client.on("guildCreate", async (guild) =>{
     var logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === "logchannel");
     if(!logChannel){
         try{
-            guild.channels.create("logchannel", {
+            await guild.channels.create("logchannel", {
                 data: {
                     type: "GUILD_TEXT",
                     topic: "Log channel for Valkyrie",
-                    reason: "Automatically created a Log Channel. If you have one already, please use /config to point to that role. Else, feel free to edit this channel however you please."
+                    reason: "Automatically created a Log Channel. If you have one already, please use /config to point to that channel. Else, feel free to edit this channel however you please."
                 },
-            }).then(newLogChannel => {
-                Configs.update({logChannelID: newLogChannel.id}, {where: {guildID: guild.id}}).then(() => {
+            }).then(async newLogChannel => {
+                logChannelExists = true;
+                await Configs.update({logChannelID: newLogChannel.id}, {where: {guildID: guild.id}}).then(() => {
                     embed.addField("I automatically created a log channel", "Feel free to edit this channel however you want!");
                 }).catch(e=>{
                     console.log(e);
@@ -844,19 +851,26 @@ client.on("guildCreate", async (guild) =>{
             //return channel.send("Code 120 - Bot has insufficient Permissions to Create a Channel.");
         }
     }else{
-        Configs.update({logChannelID: logChannel.id}, {where:{guildID: guild.id}}).then(() => {
+        logChannelExists = true;
+        await Configs.update({logChannelID: logChannel.id}, {where:{guildID: guild.id}}).then(() => {
             embed.addField("I found an existing log channel", "You already had a channel called #logchannel, so I set that as the destination for all my log features.\nYou can edit this at any time with the command \`/config logchannel\`");
         }).catch(e => {
             console.log(e);
             //return channel.send("Code 110 - Unknown Error with Database.");
         })
     }
+
+    if(logChannelExists){
+        logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === "logchannel");
+        client.channels.fetch("742734104419893322").then(statusUpdateChannel => {
+            statusUpdateChannel.addFollower(logChannel.id, "Added automated Valkyrie Service Updates")
+        }).catch(console.error);
+    }
     
-    const embed = new Discord.MessageEmbed()
-    .setColor("GREEN")
-    .setTimestamp(Date.now())
-    .setAuthor("Welcome to the Valkyrie family!")
-    .addField("Support Discord", "Need help? Join https://discord.gg/NvqK5W9");
+    embed.setColor("GREEN")
+    embed.setTimestamp(Date.now())
+    embed.setAuthor("Welcome to the Valkyrie family!")
+    embed.addField("Support Discord", "Need help? Join https://discord.gg/NvqK5W9");
     if(mutedRoleExists == false){
         embed.addField("I couldn't find or create a muted role", "If you already have one, use `/config muterole` to change the server config");
     }
@@ -1268,8 +1282,10 @@ client.on("guildMemberAdd", async (member) => {
 * @param member - the member that left's object
 */
 client.on("guildMemberRemove", async (member) => {
+    if(member.id == client.user.id){ return; }
+
     const guild = member.guild;
-    
+
     const enabled = await common.getLogTypeState(guild.id, "usermigration");
     if(enabled){
         const logchannel = await common.getLogChannel(guild.id);
