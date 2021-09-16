@@ -643,8 +643,7 @@ client.on("interactionCreate", (interaction) =>{
     
                                 embed.fields[embed.fields.indexOf(participantsField)] = newField;
     
-                                interaction.message.edit({embeds: [embed]});
-                                return interaction.reply({content:"You successfully joined this activity!", ephemeral: true});
+                                return interaction.update({embeds: [embed]});
                             })
                             
                         })
@@ -685,8 +684,7 @@ client.on("interactionCreate", (interaction) =>{
     
                                 embed.fields[embed.fields.indexOf(participantsField)] = newField;
     
-                                interaction.message.edit({embeds: [embed]});
-                                return interaction.reply({content: "You have successfully left this activity", ephemeral: true});
+                                return interaction.update({embeds: [embed]});
                             })
                         }else{
                             participant.destroy();
@@ -713,8 +711,7 @@ client.on("interactionCreate", (interaction) =>{
     
                                 embed.fields[embed.fields.indexOf(substitutesField)] = newField;
     
-                                interaction.message.edit({embeds: [embed]});
-                                return interaction.reply({content: "You have successfully left this activity", ephemeral: true});
+                                return interaction.update({embeds: [embed]});
                             })
                         }
                     }
@@ -753,8 +750,7 @@ client.on("interactionCreate", (interaction) =>{
                                     embed.fields[embed.fields.indexOf(substitutesField)] = newField;
                                 }
     
-                                interaction.message.edit({embeds: [embed]});
-                                return interaction.reply({content: "You have successfully joined this activity as a substitute.", ephemeral: true});
+                                return interaction.update({embeds: [embed]});
                             })
                         })
                     }else{
@@ -1155,10 +1151,11 @@ client.on("messageDelete", async (message) =>{
                 attachments.push(attachment.proxyURL)
             })
         }
-        
+
+        const eventCreator = await guild.members.resolve(member.id).toString();
         const embed = new Discord.MessageEmbed()
             .setAuthor(`${member.displayName}'s message was deleted`)
-            .addField("Message Data", `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
+            .addField("Message Data", `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Member Name/ID**: ${eventCreator} (${member.id})\n`)
             .setColor("RED")
             .setFooter("messagedelete.logs.valkyrie")
             .setTimestamp(new Date());
