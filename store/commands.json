@@ -1351,5 +1351,23 @@
                 ]
             }
         ]
+    },
+    {
+        "name": "purge",
+        "description": "Purge x messages from a channel",
+        "options": [
+            {
+                "name": "amount",
+                "description": "The number of messages to purge",
+                "type": "INTEGER",
+                "required": true
+            },
+            {
+                "name": "user",
+                "description": "Only delete <amount> messages from this user",
+                "type": "USER",
+                "required": false
+            }
+        ]
     }
 ]
