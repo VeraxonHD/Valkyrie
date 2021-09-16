@@ -1155,7 +1155,7 @@ client.on("messageDelete", async (message) =>{
         const eventCreator = await guild.members.resolve(member.id).toString();
         const embed = new Discord.MessageEmbed()
             .setAuthor(`${member.displayName}'s message was deleted`)
-            .addField("Message Data", `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Member Name/ID**: ${eventCreator} (${member.id})\n`)
+            .addField("Message Data", `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Author Name/ID**: ${eventCreator} (${member.id})\n`)
             .setColor("RED")
             .setFooter("messagedelete.logs.valkyrie")
             .setTimestamp(new Date());
@@ -1201,10 +1201,10 @@ client.on("messageUpdate", async (oldMessage, newMessage) =>{
                     attachments.push(attachment.proxyURL)
                 })
             }
-            
+            const eventCreator = await guild.members.resolve(member.id).toString();
             const embed = new Discord.MessageEmbed()
             .setAuthor(`${member.displayName}'s message was edited`)
-            .addField("Message Data", `**Date/Time**: ${df(oldMessage.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
+            .addField("Message Data", `**Date/Time**: ${df(oldMessage.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Author Name/ID**: ${eventCreator} (${member.id})\n`)
             .addField("Old Message Content", oldContent)
             .addField("New Message Content", newContent)
             .setColor("ORANGE")
@@ -1249,10 +1249,11 @@ client.on("guildMemberAdd", async (member) => {
     const enabled = await common.getLogTypeState(guild.id, "usermigration");
     if(enabled){
         const logchannel = await common.getLogChannel(guild.id);
+        const eventCreator = await guild.members.resolve(member.id).toString();
         if(logchannel){
             const embed = new Discord.MessageEmbed()
             .setAuthor(`${member.user.tag} joined the server`)
-            .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
+            .addField("Event Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**User Name/ID**: ${eventCreator} (${member.id})\n**New Guild Size**: ${guild.memberCount}`)
             .setThumbnail(member.user.avatarURL())
             .setColor("DARK_GREEN")
             .setFooter("guildmemberadd.logs.valkyrie")
@@ -1345,9 +1346,11 @@ client.on("guildMemberUpdate", async (oldMember, newMember) =>{
                 return;
             }
             
+            const eventCreator = await guild.members.resolve(member.id).toString();
+
             const embed = new Discord.MessageEmbed()
             .setAuthor(`${member.displayName}'s roles were updated`)
-            .addField("Update Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
+            .addField("Update Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Member Name/ID**: ${eventCreator} (${member.id})\n`)
             .setColor("LUMINOUS_VIVID_PINK")
             .setFooter("roles.guildmemberupdate.logs.valkyrie")
             .setTimestamp(new Date());
@@ -1377,10 +1380,11 @@ client.on("voiceStateUpdate", async(oldState, newState) =>{
     const enabled = await common.getLogTypeState(guild.id, "messageedit");
     if(enabled == true){
         const logchannel = await common.getLogChannel(guild.id);
+        const eventCreator = await guild.members.resolve(member.id).toString();
         if(logchannel){
             const embed = new Discord.MessageEmbed()
             .setAuthor(`${member.displayName}'s voice state was updated`)
-            .addField("Voice State Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Creator Name/ID**: ${guild.members.resolve(member.id).toString()} (${member.id})\n`)
+            .addField("Voice State Data", `**Date/Time**: ${df(new Date(), "dd/mm/yyyy HH:MM:ss Z")}\n**Member Name/ID**: ${eventCreator} (${member.id})\n`)
             .setColor("AQUA")
             .setFooter("voicestateupdate.logs.valkyrie")
             .setTimestamp(new Date());
