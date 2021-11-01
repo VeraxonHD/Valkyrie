@@ -779,6 +779,7 @@ client.on("guildCreate", async (guild) =>{
         logTypes: {
             usermigration: true,
             messagedelete: true,
+            messagedeletebulk: true,
             messageedit: true,
             voicestate: true,
             rolechanges: true
@@ -1178,12 +1179,81 @@ client.on("messageDelete", async (message) =>{
             embed.addField("Message Content", message.content)
         }
         if(attachments.length != 0){
-            embed.addField("Message Attachment URLs", attachments)
+            embed.addField("Message Attachment URLs", attachments.join("\n"))
         }
         
         return logchannel.send({embeds: [embed]});
     }
 });
+
+client.on("messageDeleteBulk", async (messages) => {
+    const guild = messages.first().guild;
+    const channel = messages.first().channel;
+    const { MultiEmbed, MultiEmbedPage } = require("./util/classes");
+
+    const enabled = await common.getLogTypeState(guild.id, "messagedeletebulk");
+    if(enabled == false){
+        return;
+    }
+
+    const logchannel = await common.getLogChannel(guild.id);
+    if(!logchannel){ return; }
+
+    var multiEmbed = new MultiEmbed(2)
+            .setAuthor("Bulk Delete Event")
+            .setFooter("messagedeletebulk.logs.valkyrie");
+    
+    await messages.forEach(async message => {
+        var attachments = [];
+        if(message.attachments.size != 0){
+            message.attachments.each(attachment => {
+                attachments.push(attachment.proxyURL)
+            })
+        }
+
+        const eventCreator = await guild.members.resolve(message.member.id).toString();
+        var pageFields = [];
+        const messageData = {name: "Message Data", value: `**Date/Time**: ${df(message.createdTimestamp, "dd/mm/yyyy HH:MM:ss Z")}\n**Author Name/ID**: ${eventCreator} (${message.member.id})\n`, inline: false}
+        pageFields.push(messageData);
+
+        var messageContent, messageAttachments;
+        if(message.content){
+            messageContent = {name: "Message Content", value: message.content, inline: false}
+            pageFields.push(messageContent)
+        }
+        if(attachments.length != 0){
+            messageAttachments = {name: "Message Attachments", value: attachments.join("\n"), inline: false}
+            pageFields.push(messageAttachments)
+        }
+
+        multiEmbed.addPage(new MultiEmbedPage(pageFields));
+    })    
+
+    const embed = multiEmbed.render();
+    logchannel.send(embed).then(async msg => {
+        const collector = msg.createMessageComponentCollector({ time: 120000 });
+
+        collector.on("collect", async i => {
+            if(i.customId == "testPrevious"){
+                await i.deferUpdate();
+                const previousPage = multiEmbed.previousPage();
+                i.editReply(previousPage);
+            }else if(i.customId == "testNext"){
+                await i.deferUpdate();
+                const nextPage = multiEmbed.nextPage();
+                i.editReply(nextPage);
+            }else if(i.customId == "testEnd"){
+                collector.stop();
+            }
+        })
+
+        collector.on("end", collected => {
+            const finalPage = multiEmbed.finalRender(`${multiEmbed.pages.length} messages were deleted`);
+            msg.edit(finalPage)
+            console.log(`BulkDelete Collection Ended. Collected ${collected.size} events.`);
+        })
+    }).catch(console.error);
+})
 
 /**
 * 'messageUpdate' - Called when a message is edited
