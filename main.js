@@ -1234,9 +1234,7 @@ client.on("messageDeleteBulk", async (messages) => {
         }
 
         multiEmbed.addPage(new MultiEmbedPage(pageFields));
-    })    
-
-    multiEmbed.printPages()
+    })
 
     const embed = multiEmbed.render();
     logchannel.send(embed).then(async msg => {
