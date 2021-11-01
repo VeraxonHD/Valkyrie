@@ -215,7 +215,7 @@ exports.execute = async (interaction) => {
         const lfgEmbedID = args.getString("messageid");
         LFGroups.findOne({where: {messageID: lfgEmbedID}}).then(async row =>{
             if(row){
-                if(member.id != row.creatorID){
+                if(member.id != row.creatorID && !member.permissions.has("MANAGE_MESSAGES")){
                     return interaction.reply({content: "Error - you do not own this LFG Post, and therefore are unauthorized to edit it.", ephemeral: true});
                 }
                 const lfgEmbedChannel = await guild.channels.resolve(row.channelID);
