@@ -233,6 +233,19 @@
                         ]
                     },
                     {
+                        "name": "messagedeletebulk",
+                        "description": "Logs when messages are deleted in bulk",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "enable",
+                                "description": "Whether or not to enable this log",
+                                "type": "BOOLEAN",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
                         "name": "messageedit",
                         "description": "Logs when messages are edited",
                         "type": "SUB_COMMAND",
