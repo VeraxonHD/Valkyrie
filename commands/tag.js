@@ -1,16 +1,3 @@
-class longFieldHandler{
-    constructor(fieldArray) {
-        //console.log("CONSTRUCTOR CALLED")
-        if(!fieldArray){
-            fieldArray = [];
-        }
-        this.content = fieldArray;
-    }
-    getContent(){
-        return this.content;
-    }
-}
-
 exports.execute = async (interaction) => {
     //Interaction information
     const guild = interaction.guild;
@@ -23,6 +10,7 @@ exports.execute = async (interaction) => {
     const Discord = require("discord.js");
     const { Op } = require("sequelize");
     const df = require("dateformat");
+    const { MultiEmbed, MultiEmbedPage } = require("../util/classes");
 
     //Database Retrieval
     const Tags = main.getTagsTable();
@@ -139,48 +127,43 @@ exports.execute = async (interaction) => {
         }
     }else if(subcommandGroup == null && subcommand == "list"){
         Tags.findAll({where: {guildID: guild.id}}).then(tags => {
-            var tagLength = 0;
-            var thisFieldTagContent = [];
-            var tagFields = [];
-            var tagFieldCounter = 0;
-            while(tags.length != 0){
-                //console.log(`Current Length of Tags Array: ${tags.length}`)
-                var thisTag = tags.pop();
-                tagString = `**${thisTag.name}** - ${thisTag.response}`;
-                //console.log(`tagString: ${tagString}`)
-                tagLength += tagString.length;
-                //console.log(`Field String Length (tagLength): ${tagLength}`)
-                if(tagLength >= 1023){
-                    tagFields.push(new longFieldHandler(thisFieldTagContent))
-                    //console.log(`EXCEEDED 1023 CHARACTERS. Pusing the current fieldcontent: ${thisFieldTagContent}`)
-                    //Re-push the tag onto the stack so it can be picked up next iteration
-                    tags.push(thisTag);
-                    //reset variables
-                    tagLength = 0;
-                    tagFieldCounter++;
-                    thisFieldTagContent = [];
-                }else{
-                    thisFieldTagContent.push(tagString)
-                    //console.log(`Pushing string to current field content: ${thisFieldTagContent}`)
-                    if(tags.length == 0){
-                        //console.log(`Tags Length hit 0. Pushing final content: ${thisFieldTagContent}`)
-                        tagFields.push(new longFieldHandler(thisFieldTagContent))
-                    }
-                }
-            }
+            var multiEmbed = new MultiEmbed()
+                .setAuthor(`Tag list for ${guild.name}`)
+                .setFooter(`list.tag.valkyrie`)
+                .setColor("#00C597");
+            tags.forEach(tag => {
+                var field = [];
+                field.push({name: tag.name, value: tag.response, inline: false})
+                multiEmbed.addPage(new MultiEmbedPage(field));
+            });
 
-            const embed = new Discord.MessageEmbed()
-                .setAuthor(`List of Tags in ${guild.name}`)
-                .setFooter(`list.tags.valkyrie`)
-                .setColor("#00C597")
-                .setTimestamp(new Date());
-            //console.log(`\n Tag Fields Length: ${tagFields.length}`)
-            var number = 1;
-            tagFields.forEach(field =>{
-                embed.addField(`Tags - Page ${number}`, field.getContent().join("\n"))
-                number++;
-            })
-            interaction.reply({embeds: [embed]});
+            const embed = multiEmbed.render();
+
+            channel.send(embed).then(async msg => {
+                interaction.reply({content: "Here are a list of tags for this guild:", ephemeral: true})
+                const filter = f => f.user.id === member.id
+                const collector = msg.createMessageComponentCollector({ filter, time: 120000 });
+
+                collector.on("collect", async i => {
+                    if(i.customId == "previous"){
+                        await i.deferUpdate();
+                        const previousPage = multiEmbed.previousPage();
+                        i.editReply(previousPage);
+                    }else if(i.customId == "next"){
+                        await i.deferUpdate();
+                        const nextPage = multiEmbed.nextPage();
+                        i.editReply(nextPage);
+                    }else if(i.customId == "end"){
+                        collector.stop();
+                    }
+                });
+
+                collector.on("end", collected => {
+                    const finalPage = multiEmbed.finalRender(`${multiEmbed.pages.length} tags were displayed`);
+                    msg.edit(finalPage)
+                    console.log(`Tag List Collection Ended. Collected ${collected.size} events.`);
+                });
+            });
         })
     }else if(subcommandGroup == null && subcommand == "create"){
         if(!member.permissions.has("MANAGE_MESSAGES")){
