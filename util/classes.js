@@ -56,15 +56,15 @@ class MultiEmbed{
         });
 
         var previousButton = new Discord.MessageButton()
-            .setCustomId('testPrevious')
+            .setCustomId('previous')
             .setLabel('<')
             .setStyle('PRIMARY');
         var nextButton = new Discord.MessageButton()
-            .setCustomId('testNext')
+            .setCustomId('next')
             .setLabel('>')
             .setStyle('PRIMARY');
         var endButton = new Discord.MessageButton()
-            .setCustomId('testEnd')
+            .setCustomId('end')
             .setLabel('X')
             .setStyle('DANGER');
 
