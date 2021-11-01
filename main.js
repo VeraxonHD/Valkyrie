@@ -617,19 +617,25 @@ client.on("interactionCreate", (interaction) =>{
         if(interaction.customId == "lfgJoin"){
             LFGroups.findOne({where: {messageID: interaction.message.id}}).then(group => {
                 LFGParticipants.findOne({where: {[Op.and]: [{messageID: group.messageID},{memberID: interaction.user.id}]}}).then(participant => {
-                    if(!participant){
-                        LFGParticipants.create({
-                            messageID: group.messageID,
-                            memberID: interaction.user.id,
-                            commitmentType: 0
-                        }).then(() =>{
-                            LFGParticipants.findAll({where: {messageID: group.messageID}}).then(allParticipants => {
-                                var currentSize = allParticipants.length;
-                                var maxSize = group.groupSize;
-        
+                    LFGParticipants.findAll({where: {[Op.and]: [{messageID: group.messageID}, {commitmentType: 0}]}}).then(allParticipants => {     
+                        var currentSize = allParticipants.length;
+                        var maxSize = group.groupSize;
+
+                        if(currentSize == maxSize){
+                            return interaction.reply({content: "This event is currently full. You can still register your interest as a Substitute player by clicking the 'Substitute' button.", ephemeral: true});
+                        }
+
+                        if(!participant){
+                            LFGParticipants.create({
+                                messageID: group.messageID,
+                                memberID: interaction.user.id,
+                                commitmentType: 0
+                            }).then(() =>{    
                                 var embed = interaction.message.embeds[0];
                                 var participantsField = embed.fields.find(element => element.name.includes("Participants"));
                                 var newParticipants;
+
+                                currentSize++;
     
                                 if(participantsField.value == "None" && participantsField.value.length == 4){
                                     newParticipants = [];
@@ -644,12 +650,13 @@ client.on("interactionCreate", (interaction) =>{
                                 embed.fields[embed.fields.indexOf(participantsField)] = newField;
     
                                 return interaction.update({embeds: [embed]});
+                                
+                                
                             })
-                            
-                        })
-                    }else{
-                        return interaction.reply({content: "You have already signed up for this event!", ephemeral: true});
-                    }
+                        }else{
+                            return interaction.reply({content: "You have already signed up for this event!", ephemeral: true});
+                        }
+                    });
                 })
             });
         }else if(interaction.customId == "lfgLeave"){
@@ -1229,20 +1236,22 @@ client.on("messageDeleteBulk", async (messages) => {
         multiEmbed.addPage(new MultiEmbedPage(pageFields));
     })    
 
+    multiEmbed.printPages()
+
     const embed = multiEmbed.render();
     logchannel.send(embed).then(async msg => {
         const collector = msg.createMessageComponentCollector({ time: 120000 });
 
         collector.on("collect", async i => {
-            if(i.customId == "testPrevious"){
+            if(i.customId == "previous"){
                 await i.deferUpdate();
                 const previousPage = multiEmbed.previousPage();
                 i.editReply(previousPage);
-            }else if(i.customId == "testNext"){
+            }else if(i.customId == "next"){
                 await i.deferUpdate();
                 const nextPage = multiEmbed.nextPage();
                 i.editReply(nextPage);
-            }else if(i.customId == "testEnd"){
+            }else if(i.customId == "end"){
                 collector.stop();
             }
         })
