@@ -89,7 +89,7 @@
     },
     {
         "name": "mute",
-        "description": "Mute a user, applying a role that stops them from speaking.",
+        "description": "[Deprecated] Mute a user, applying a role that stops them from speaking.",
         "options": [
             {
                 "name": "user",
@@ -105,6 +105,58 @@
                     {
                         "name": "duration",
                         "description": "Mute Duration. Accepted Formats: 1h (1 Hour), 15m (15 Minutes), 1d (1 Day) etc.",
+                        "type": "STRING"
+                    },
+                    {
+                        "name": "reason",
+                        "description": "The reason for their mute",
+                        "type": "STRING"
+                    }
+                ]
+            },
+            {
+                "name": "mention",
+                "description": "Mute a user my mention",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "member",
+                        "description": "The Users @Mention",
+                        "type": "USER",
+                        "required": true
+                    },
+                    {
+                        "name": "duration",
+                        "description": "Mute Duration. Accepted Formats: 1h (1 Hour), 15m (15 Minutes), 1d (1 Day) etc.",
+                        "type": "STRING"
+                    },
+                    {
+                        "name": "reason",
+                        "description": "The reason for their mute",
+                        "type": "STRING"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "timeout",
+        "description": "Time out a user",
+        "options": [
+            {
+                "name": "user",
+                "description": "Time out a user by User ID",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "userid",
+                        "description": "The Users Unique Snowflake ID",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "duration",
+                        "description": "The duration of the timeout",
                         "type": "STRING"
                     },
                     {

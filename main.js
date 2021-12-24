@@ -387,6 +387,28 @@ const LFGParticipants = sequelize.define("LFGParticipants", {
         allowNull: false
     }
 })
+const Timeouts = sequelize.define("Timeouts", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    moderatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    duration: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    reason: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -430,6 +452,9 @@ exports.getLFGroupsTable = () =>{
 }
 exports.getLFGParticipantsTable = () =>{
     return LFGParticipants;
+}
+exports.getTimeoutsTable = () => {
+    return Timeouts;
 }
 //Client Getter
 exports.getClient = () =>{
@@ -573,6 +598,7 @@ client.on("ready", async () =>{
     await BlacklistExemptions.sync();
     await LFGroups.sync();
     await LFGParticipants.sync();
+    await Timeouts.sync();
 
     console.log("[VALKYRIE] Tables Loaded.")
     
