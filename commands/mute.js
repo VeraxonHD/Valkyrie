@@ -9,6 +9,7 @@ exports.execute = async (interaction) => {
     const main = require("../main.js");
     const logs = require("../util/logFunctions.js");
     const ms = require("ms");
+    const Discord = require("discord.js");
 
     //Database Retrieval
     const Users = main.getUsersTable();
@@ -43,7 +44,6 @@ exports.execute = async (interaction) => {
             }
             guild.members.fetch(targetID).then(async targetMember =>{
                 targetMember.roles.add(mutedRole).then(async newMember =>{
-                    interaction.reply(`**${newMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
                     newMember.send(`You have been Muted in **${guild.name}** for **${duration}**. Reason: **${reason}**.`);
                     Mutes.create({
                         guildID: guild.id,
@@ -67,6 +67,12 @@ exports.execute = async (interaction) => {
                     });
                     const logchannel = await guild.channels.resolve(guildConfig.logChannelID);
                     const embed = await logs.logMute(targetMember, duration, reason, member, guild);
+
+                    const deprecation = new Discord.MessageEmbed()
+                        .addField("Deprecation Notice: /mute", "Discord has created a new feature called Timeouts, which Valkyrie now supports. Timeouts are functionally the same as mutes, stopping the user from being able to type or speak in channels while they are under its effects. However, since they are an inbuilt discord feature, they require no setup in terms of the long-standing method of using Muted Roles and Permissions, therefore meaning there is no chance for misconfiguration. As a result, Valkyrie's /mute system is now deprecated in favour of /timeout, which will be removed in the next feature update.")
+                        .setColor("RED");
+                    channel.send(`**${newMember.displayName}** has been muted for **${duration}**. Reason: **${reason}**.`);
+                    interaction.reply({embeds: [deprecation], ephemeral: true})
                     return logchannel.send({embeds: [embed]});
                 }).catch(e=>{
                     console.log(e);
