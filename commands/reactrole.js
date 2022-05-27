@@ -13,6 +13,7 @@ exports.execute = (interaction) =>{
 
     //Database Retrieval
     const ReactionRoles = main.getReactionRolesTable();
+    const ReactionRolesOptions = main.getReactionRolesOptionsTable();
     const client = main.getClient();
 
     if(member.permissions.has("ADMINISTRATOR") == false){
@@ -23,84 +24,288 @@ exports.execute = (interaction) =>{
     const subcommand = args.getSubcommand();
 
     if(subcommand == "init"){
-        //Argument Handling
-        var rrChannel = args.getChannel("channel");
-        var messageText = args.getString("message");
-        if(!messageText){
-            messageText = "Select one of the Emoji below to recieve the corresponding role.";
+        const rrChannel = args.getChannel("channel")
+        const rrKey = args.getBoolean("key")
+        var rrMessage = args.getString("message")
+        var rrColour = args.getString("colour")
+
+        if(!rrMessage){
+            rrMessage = "Select a reaction below to obtain the relevant role"
         }
 
-        const embed = new Discord.MessageEmbed()
-                .setAuthor(messageText)
-                .setColor("ORANGE");
-        rrChannel.send({embeds: [embed]}).then(rrMsg =>{
+        var embed = new Discord.MessageEmbed()
+            .setAuthor(rrMessage);
+        if(rrColour){
+            embed.setColor(rrColour);
+        }
+        if(rrKey){
+            embed.addField("Key", "[The Key of each emote and its corresponding role]")
+        }
+
+        rrChannel.send({embeds: [embed]}).then(msg => {
             ReactionRoles.create({
                 guildID: guild.id,
-                channelID: rrMsg.channel.id,
-                messageID: rrMsg.id,
-                creatorGUID: (guild.id + member.id),
-                reactions: {}
-            }).catch(e=>{
-                console.log(e);
-                return interaction.reply("Error 110 - Unknown Database Error")
-            });
-            interaction.reply("Initialized reaction role in channel successfully.");
-        }).catch(e=>{
-            console.log(e);
-            return interaction.reply("Code 120 - Bot has insufficient Permissions to write to the targeted channel.")
-        });
-    }else if(subcommand == "add"){
-        var messageID = args.getString("messageid");
-        var reactionEmoji = args.getString("reactionemoji");
-        var reactionRole = args.getRole("role");
-
-        ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
-            var rrGuild = client.guilds.cache.get(row.guildID);
-            var rrChannel = rrGuild.channels.cache.get(row.channelID);
-            var rrData = row.reactions;
-
-            rrChannel.messages.fetch(row.messageID).then(rrMessage =>{
-                var rrEmoji = client.emojis.resolve(reactionEmoji.split(":")[2].split(">")[0]);
-                if(rrMessage){
-                    if(rrEmoji){
-                        if(reactionRole){
-                            rrMessage.react(rrEmoji).then(async m =>{
-                                rrData[rrEmoji.id] = {
-                                    "emojiID": rrEmoji.id,
-                                    "roleID": reactionRole.id,
-                                    "messageID": rrMessage.id
-                                }
-                                ReactionRoles.update({reactions: rrData}, {where: {messageID: rrMessage.id}});
-                                interaction.reply("Added a new reaction role to message successfully.");
-                            }).catch(err => {
-                                return interaction.reply("The supplied emoji is invalid. This may be caused either by the emoji being from a server of which I am not a member, or it's a default emoji.");
-                            })
-                        }else{
-                            return interaction.reply("That role does not exist. Please try again later.");
-                        }
-                    }else{
-                        return interaction.reply("The supplied emoji is invalid. This may be caused either by the emoji being from a server of which I am not a member, or it's a default emoji.");
-                    }
-                }else{
-                    return interaction.reply("That message ID is not valid.");
-                }
+                channelID: rrChannel.id,
+                messageID: msg.id,
+                keyEnabled: rrKey
+            }).then(() => {
+                return interaction.reply({content: "Successfully created a new reactrole base message. To add react roles to it, use the \`/reactrole add\` command.", ephemeral: true});
+            }).catch(err => {
+                console.error(err);
+                return interaction.reply({content: "There was an error writing the new react role to the database. Please try again later.", ephemeral: true});
             })
         })
-    }else if(subcommand == "delete"){
-        var messageID = args.getString("messageid")
+    }else if(subcommand == "add"){
+        const rrMessageID = args.getString("messageid");
+        const rrReactionEmoji = args.getString("reactionemoji");
+        const rrRole = args.getRole("role");
 
-        ReactionRoles.findOne({where: {messageID: messageID}}).then(async row =>{
-            var rrGuild = client.guilds.cache.get(row.guildID);
-            var rrChannel = rrGuild.channels.resolve(row.channelID);
+        var emoji = client.emojis.resolveId(rrReactionEmoji);
 
-            rrChannel.messages.fetch(row.messageID).then(rrMessage =>{
-                if(rrMessage){
-                    rrMessage.delete().then(async m =>{
-                        await ReactionRoles.destroy({where: {messageID: rrMessage.id}});
-                        interaction.reply("Reaction Role deleted successfully.");
+        ReactionRoles.findOne({where: {messageID: rrMessageID}}).then(rrRecord => {
+            if(rrRecord){
+                const rrChannel = guild.channels.resolve(rrRecord.channelID);
+                if(!rrChannel){
+                    return interaction.reply({content: `Could not find the channel that that ReactRole base message ID links to, does it still exist?`, ephemeral: true});
+                }else{
+                    rrChannel.messages.fetch(rrRecord.messageID).then(async rrMessage => {
+                        rrMessage.react(rrReactionEmoji).then(rrReaction => {
+                            var custom;
+                            var emojiID;
+                            if(rrReaction.emoji.id == null){
+                                custom = false;
+                                emojiID = rrReaction.emoji.name
+                            }else{
+                                custom = true;
+                                emojiID = rrReaction.emoji.id;
+                            }
+
+                            ReactionRolesOptions.create({
+                                baseMessageID: rrMessageID,
+                                customEmoji: custom,
+                                emoji: emojiID,
+                                roleID: rrRole.id
+                            }).then(() => {
+                                const rrEmbed = rrMessage.embeds[0];
+                                const rrEmbedKeyField = rrEmbed.fields.find(element => element.name.includes("Key"));
+
+                                if(rrEmbedKeyField){
+                                    var rrEmbedKeyField_Content = rrEmbedKeyField.value
+
+                                    if(rrEmbedKeyField_Content == "[The Key of each emote and its corresponding role]"){
+                                        rrEmbedKeyField_Content = ["[The Key of each emote and its corresponding role]"]
+                                    }else{
+                                        rrEmbedKeyField_Content = rrEmbedKeyField_Content.split("\n")
+                                    }
+
+                                    rrEmbedKeyField_Content.push(`${rrReaction.emoji} - ${rrRole.toString()}`)
+
+                                    var newField = {name: "Key", value: rrEmbedKeyField_Content.join("\n"), inline: false}
+
+                                    rrEmbed.fields[rrEmbed.fields.indexOf(rrEmbedKeyField)] = newField
+                                    rrMessage.edit({embeds: [rrEmbed]})
+                                }
+
+                                return interaction.reply({content: `Emoji **${rrReaction.emoji.name}** linked to role **${rrRole.name}**`, ephemeral: true});
+                            }).catch(err => {
+                                console.error(err);
+                                return interaction.reply({content: "Code 110 - Database Error - Could not write new Option to database. Try again later.", ephemeral: true});
+                            })
+                        }).catch(err => {
+                            console.error(err);
+                            return interaction.reply({content: `Failed to link an unknown emoji to role **${rrRole.name}**. Check it exists and that Valkyrie is in the server that the emoji is registered to.`, ephemeral: true});
+                        });
+                    }).catch(err => {
+                        console.error(err);
+                        return interaction.reply({content: `Could not find that ReactRole base message, does it still exist?`, ephemeral: true});
                     })
                 }
-            })
+            }else{
+                return interaction.reply({content: `Could not find that ReactRole base message, did you ever initialise it? Try \`/reactrole init\``, ephemeral: true});
+            }
+        })
+    }else if(subcommand == "delete"){
+        const rrMessageID = args.getString("messageid")
+        const rrRole = args.getRole("role")
+
+        ReactionRoles.findOne({where: {messageID: rrMessageID}}).then(rrRecord => {
+            if(!rrRecord){
+                return interaction.reply({content: `Could not find that ReactRole base message, did you ever initialise it? Try \`/reactrole init\``, ephemeral: true});
+            }else{
+                var rrChannel = guild.channels.resolve(rrRecord.channelID)
+                if(!rrChannel){
+                    return interaction.reply({content: `Could not find the channel that that ReactRole base message ID links to, does it still exist?`, ephemeral: true});
+                }else{
+
+                    ReactionRolesOptions.findOne({where: {roleID: rrRole.id}}).then(rrOption => {
+                        if(rrOption){
+                            if(rrOption.customEmoji){
+                                rrChannel.messages.fetch(rrMessageID).then(rrMessage => {
+                                    var reactions = rrMessage.reactions.cache
+                                    reactions.forEach(reaction => {
+                                        if(reaction.emoji.id == rrOption.emoji){
+                                            reaction.remove().then(() => {
+                                                rrOption.destroy().then(() => {
+                                                    const rrEmbed = rrMessage.embeds[0];
+                                                    const rrEmbedKeyField = rrEmbed.fields.find(element => element.name.includes("Key"));
+
+                                                    if(rrEmbedKeyField){
+                                                        var currentContent = rrEmbedKeyField.value
+
+                                                        if(currentContent == "[The Key of each emote and its corresponding role]"){
+                                                            currentContent = ["[The Key of each emote and its corresponding role]"]
+                                                        }else{
+                                                            currentContent = currentContent.split("\n")
+                                                        }
+
+                                                        var newContent = []
+
+                                                        currentContent.forEach(line => {
+                                                            if(!line.includes(rrRole.toString())){
+                                                                newContent.push(line)
+                                                            }
+                                                        })
+
+                                                        if(newContent.length == 0){
+                                                            newContent = "[The Key of each emote and its corresponding role]"
+                                                        }else{
+                                                            newContent = newContent.join("\n")
+                                                        }
+
+                                                        var newField = {name: "Key", value: newContent, inline: false}
+
+                                                        rrEmbed.fields[rrEmbed.fields.indexOf(rrEmbedKeyField)] = newField
+                                                        rrMessage.edit({embeds: [rrEmbed]})
+                                                    }
+
+                                                    return interaction.reply({content: `Successfully removed the Role **${rrRole.name}** from the Reaction Role options`, ephemeral: true})
+                                                }).catch(err => {
+                                                    console.error(err);
+                                                    return interaction.reply({content: `Code 110 - Database Error - Could not remove the role option from the database. Please try again later.`, ephemeral: true})
+                                                })
+                                            }).catch(err => {
+                                                console.error(err)
+                                                return interaction.reply({content: `Code 100 - Unknown error occured when attempting to delete all reactions of that emoji. Try again later.`})
+                                            })
+                                        }
+                                    })
+                                }).catch(err => {
+                                    console.error(err);
+                                    return interaction.reply({content: `Could not find that ReactRole base message, does it still exist?`, ephemeral: true});
+                                })
+                            }else{
+                                rrChannel.messages.fetch(rrMessageID).then(rrMessage => {
+                                    var reactions = rrMessage.reactions.cache
+                                    reactions.forEach(reaction => {
+                                        if(reaction.emoji.name == rrOption.emoji){
+                                            reaction.remove().then(() => {
+                                                rrOption.destroy().then(() => {
+                                                    const rrEmbed = rrMessage.embeds[0];
+                                                    const rrEmbedKeyField = rrEmbed.fields.find(element => element.name.includes("Key"));
+    
+                                                    if(rrEmbedKeyField){
+                                                        var currentContent = rrEmbedKeyField.value
+
+                                                        if(currentContent == "[The Key of each emote and its corresponding role]"){
+                                                            currentContent = ["[The Key of each emote and its corresponding role]"]
+                                                        }else{
+                                                            currentContent = currentContent.split("\n")
+                                                        }
+
+                                                        var newContent = []
+
+                                                        currentContent.forEach(line => {
+                                                            if(!line.includes(rrRole.toString())){
+                                                                newContent.push(line)
+                                                            }
+                                                        })
+
+                                                        if(newContent.length == 0){
+                                                            newContent = "[The Key of each emote and its corresponding role]"
+                                                        }else{
+                                                            newContent = newContent.join("\n")
+                                                        }
+
+                                                        var newField = {name: "Key", value: newContent, inline: false}
+
+                                                        rrEmbed.fields[rrEmbed.fields.indexOf(rrEmbedKeyField)] = newField
+                                                        rrMessage.edit({embeds: [rrEmbed]})
+                                                    }
+
+                                                    return interaction.reply({content: `Successfully removed the Role **${rrRole.name}** from the Reaction Role options`, ephemeral: true})
+                                                }).catch(err => {
+                                                    console.error(err);
+                                                    return interaction.reply({content: `Code 110 - Database Error - Could not remove the role option from the database. Please try again later.`, ephemeral: true})
+                                                })
+                                            }).catch(err => {
+                                                console.error(err)
+                                                return interaction.reply({content: `Code 100 - Unknown error occured when attempting to delete all reactions of that emoji. Try again later.`})
+                                            })
+                                        }
+                                    })
+                                }).catch(err => {
+                                    console.error(err);
+                                    return interaction.reply({content: `Could not find that ReactRole base message, does it still exist?`, ephemeral: true});
+                                })
+                            }
+                        }else{
+                            return interaction.reply({content: `Could not find the emoji that the supplied Role links to, have you set it up using \`/reactrole add\``, ephemeral: true});
+                        }
+                    })   
+                }
+            }
+        })
+    }else if(subcommand == "delete-all"){
+        const rrMessageID = args.getString("messageid")
+
+        ReactionRoles.findOne({where: {messageID: rrMessageID}}).then(rrRecord => {
+            if(rrRecord){
+                const rrChannel = guild.channels.resolve(rrRecord.channelID);
+                if(!rrChannel){
+                    return interaction.reply({content: `Could not find the channel that that ReactRole base message ID links to, does it still exist?`, ephemeral: true});
+                }else{
+                    rrChannel.messages.fetch(rrRecord.messageID).then(async rrMessage => {
+                        rrMessage.delete()
+                        rrRecord.destroy()
+                        ReactionRolesOptions.destroy({where: {baseMessageID: rrMessageID}})
+
+                        return interaction.reply({content: "Deleted the react role message and cleaned up all connected options.", ephemeral: true})
+                    }).catch(err => {
+                        console.error(err);
+                        return interaction.reply({content: `Could not find that ReactRole base message, does it still exist?`, ephemeral: true});
+                    })
+                }
+            }else{
+                return interaction.reply({content: `Could not find that ReactRole base message, did you ever initialise it? Try \`/reactrole init\``, ephemeral: true});
+            }
+        })
+    }else if(subcommand == "edit"){
+        const rrMessageID = args.getString("messageid");
+        const rrNewText = args.getString("newtext");
+
+        ReactionRoles.findOne({where: {messageID: rrMessageID}}).then(rrRecord => {
+            if(rrRecord){
+                const rrChannel = guild.channels.resolve(rrRecord.channelID);
+                if(!rrChannel){
+                    return interaction.reply({content: `Could not find the channel that that ReactRole base message ID links to, does it still exist?`, ephemeral: true});
+                }else{
+                    rrChannel.messages.fetch(rrRecord.messageID).then(async rrMessage => {
+                        rrEmbed = rrMessage.embeds[0]
+                        console.log(rrEmbed.author)
+                        newAuthor = {name: rrNewText, url: undefined, iconURL: undefined, proxyIconURL: undefined}
+
+                        rrEmbed.author = newAuthor
+
+                        rrMessage.edit({embeds: [rrEmbed]})
+                        return interaction.reply({content: "Edited the Reaction Role message text successfully.", ephemeral: true})
+                    }).catch(err => {
+                        console.error(err);
+                        return interaction.reply({content: `Could not find that ReactRole base message, does it still exist?`, ephemeral: true});
+                    })
+                }
+            }else{
+                return interaction.reply({content: `Could not find that ReactRole base message, did you ever initialise it? Try \`/reactrole init\``, ephemeral: true});
+            }
         })
     }
 }

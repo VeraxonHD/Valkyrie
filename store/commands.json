@@ -401,9 +401,122 @@
                         "required": true
                     },
                     {
+                        "name": "key",
+                        "description": "Whether or not to add an auto-updating key/legend to the message.",
+                        "type": "BOOLEAN",
+                        "required": true
+                    },
+                    {
                         "name": "message",
                         "description": "The text you want the Base Message to display",
                         "type": "STRING"
+                    },
+                    {
+                        "name": "colour",
+                        "description": "The colour of the embed message. Default: ORANGE",
+                        "type": "STRING",
+                        "choices": [
+                            {
+                                "name": "white",
+                                "value": "WHITE"
+                            },
+                            {
+                                "name": "aqua",
+                                "value": "AQUA"
+                            },
+                            {
+                                "name": "green",
+                                "value": "GREEN"
+                            },
+                            {
+                                "name": "blue",
+                                "value": "BLUE"
+                            },
+                            {
+                                "name": "yellow",
+                                "value": "YELLOW"
+                            },
+                            {
+                                "name": "purple",
+                                "value": "PURPLE"
+                            },
+                            {
+                                "name": "pink",
+                                "value": "LUMINOUS_VIVID_PINK"
+                            },
+                            {
+                                "name": "gold",
+                                "value": "GOLD"
+                            },
+                            {
+                                "name": "orange",
+                                "value": "ORANGE"
+                            },
+                            {
+                                "name": "red",
+                                "value": "RED"
+                            },
+                            {
+                                "name": "grey",
+                                "value": "GREY"
+                            },
+                            {
+                                "name": "navy",
+                                "value": "NAVY"
+                            },
+                            {
+                                "name": "dark_aqua",
+                                "value": "DARK_AQUA"
+                            },
+                            {
+                                "name": "dark_green",
+                                "value": "DARK_GREEN"
+                            },
+                            {
+                                "name": "dark_blue",
+                                "value": "DARK_BLUE"
+                            },
+                            {
+                                "name": "dark_purple",
+                                "value": "DARK_PURPLE"
+                            },
+                            {
+                                "name": "dark_gold",
+                                "value": "DARK_GOLD"
+                            },
+                            {
+                                "name": "dark_orange",
+                                "value": "DARK_ORANGE"
+                            },
+                            {
+                                "name": "dark_red",
+                                "value": "DARK_RED"
+                            },
+                            {
+                                "name": "dark_grey",
+                                "value": "DARK_GREY"
+                            },
+                            {
+                                "name": "dark_navy",
+                                "value": "DARK_NAVY"
+                            },
+                            {
+                                "name": "blurple",
+                                "value": "BLURPLE"
+                            },
+                            {
+                                "name": "dark_but_not_black",
+                                "value": "DARK_BUT_NOT_BLACK"
+                            },
+                            {
+                                "name": "not_quite_black",
+                                "value": "NOT_QUITE_BLACK"
+                            },
+                            {
+                                "name": "random",
+                                "value": "RANDOM"
+                            }
+                        ]
                     }
                 ]
             },
@@ -434,12 +547,50 @@
             },
             {
                 "name": "delete",
+                "description": "Delete a Specific Reaction Role from a message",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageid",
+                        "description": "The ID of the Base Message you want to delete",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "role",
+                        "description": "The emoji of the reaction role you want to delete",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "delete-all",
                 "description": "Delete a Base Message",
                 "type": "SUB_COMMAND",
                 "options": [
                     {
                         "name": "messageid",
                         "description": "The ID of the Base Message you want to delete",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "edit",
+                "description": "Edit the message of a React Role embed",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageid",
+                        "description": "The ID of the Base Message you want to delete",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "newtext",
+                        "description": "The new text to set",
                         "type": "STRING",
                         "required": true
                     }
@@ -1458,6 +1609,12 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
+                        "name": "pollid",
+                        "description": "The poll ID to add to",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
                         "name": "option",
                         "description": "The text to display for the option",
                         "type": "STRING",
@@ -1471,8 +1628,14 @@
                 "type": "SUB_COMMAND",
                 "options": [
                     {
+                        "name": "pollid",
+                        "description": "The poll ID to remove from",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
                         "name": "optionid",
-                        "description": "the ID of the option",
+                        "description": "The ID of the option",
                         "type": "STRING",
                         "required": true
                     }
@@ -1497,10 +1660,16 @@
                 "type": "SUB_COMMAND_GROUP",
                 "options": [
                     {
-                        "name": "anonymous",
+                        "name": "anonymous-results",
                         "description": "Whether or not results should be anonymous",
                         "type": "SUB_COMMAND",
                         "options": [
+                            {
+                                "name": "pollid",
+                                "description": "The ID of the poll",
+                                "type": "STRING",
+                                "required": true
+                            },
                             {
                                 "name": "value",
                                 "description": "If true, results will be anonymous after the poll is closed",
@@ -1514,6 +1683,12 @@
                         "description": "Whether or not results should be private (sent via DM)",
                         "type": "SUB_COMMAND",
                         "options": [
+                            {
+                                "name": "pollid",
+                                "description": "The ID of the poll",
+                                "type": "STRING",
+                                "required": true
+                            },
                             {
                                 "name": "value",
                                 "description": "If true, results will be sent to the creator after the poll is closed",
@@ -1536,7 +1711,20 @@
                         "required": true
                     }
                 ]
-            }     
+            },
+            {
+                "name": "delete",
+                "description": "Delete a poll without collating results",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "pollid",
+                        "description": "The ID of the poll",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            }       
         ]
     }
 ]

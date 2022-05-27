@@ -154,15 +154,29 @@ const ReactionRoles = sequelize.define("ReactionRoles", {
         allowNull: false,
         unique: true
     },
-    creatorGUID: {
+    keyEnabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false
+    }
+})
+const ReactionRolesOptions = sequelize.define("ReactionRolesOptions", {
+    baseMessageID: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    reactions: {
-        type: DataTypes.JSON,
-        allowNull: false,
-        defaultValue: {}
+    customEmoji: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false
+    },
+    emoji: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    roleID: {
+        type: DataTypes.STRING,
+        allowNull: false
     }
+    
 })
 const Tags = sequelize.define("Tags", {
     guildID: {
@@ -409,6 +423,46 @@ const Timeouts = sequelize.define("Timeouts", {
         allowNull: false
     }
 })
+const Polls = sequelize.define("Polls", {
+    pollID: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: false
+    },
+    channelID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    creatorID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    subject: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    anonymizeResults: {
+        type: DataTypes.BOOLEAN
+    },
+    privateResults: {
+        type: DataTypes.BOOLEAN
+    }
+})
+const PollOptions = sequelize.define("PollOptions", {
+    pollID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    optionNumber: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    optionText: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+})
 
 //DB Table Getters
 exports.getConfigsTable = () =>{
@@ -425,6 +479,9 @@ exports.getGuildUsersTable = () =>{
 }
 exports.getReactionRolesTable = () =>{
     return ReactionRoles;
+}
+exports.getReactionRolesOptionsTable = () =>{
+    return ReactionRolesOptions;
 }
 exports.getTagsTable = () =>{
     return Tags;
@@ -455,6 +512,12 @@ exports.getLFGParticipantsTable = () =>{
 }
 exports.getTimeoutsTable = () => {
     return Timeouts;
+}
+exports.getPollsTable = () => {
+    return Polls;
+}
+exports.getPollOptionsTable = () => {
+    return PollOptions;
 }
 //Client Getter
 exports.getClient = () =>{
@@ -588,6 +651,7 @@ client.on("ready", async () =>{
     await Users.sync();
     await GuildUsers.sync();
     await ReactionRoles.sync();
+    await ReactionRolesOptions.sync();
     await Mutes.sync();
     await Tags.sync();
     await Lobbies.sync();
@@ -599,6 +663,8 @@ client.on("ready", async () =>{
     await LFGroups.sync();
     await LFGParticipants.sync();
     await Timeouts.sync();
+    await Polls.sync();
+    await PollOptions.sync();
 
     console.log("[VALKYRIE] Tables Loaded.")
     
@@ -1123,21 +1189,19 @@ client.on("messageReactionAdd", async (messageReaction, user) => {
     
     if(messageReaction.message.partial) await messageReaction.message.fetch();
     var message = messageReaction.message;
-    var emojiID = messageReaction.emoji.id;
+    var guild = message.guild;
+    var emoji = messageReaction.emoji.id ? messageReaction.emoji.id : messageReaction.emoji.name;
     
-    ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
-        if(row){
-            var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
-        
-            try{
-                message.guild.members.fetch(user.id).then(member =>{
-                    member.roles.add(role);
+    ReactionRolesOptions.findOne({where: {[Op.and]: [{baseMessageID: message.id}, {emoji: emoji}]}}).then(rrOption => {
+        if(rrOption){
+            var role = guild.roles.resolve(rrOption.roleID)
+            if(role){
+                message.guild.members.fetch(user.id).then(member => {
+                    member.roles.add(role)
                 })
-            }catch(e){
-                console.log(e);
             }
         }
-    });
+    })
 });
 
 /**
@@ -1151,18 +1215,16 @@ client.on("messageReactionRemove", async (messageReaction, user) => {
     
     if(messageReaction.message.partial) await messageReaction.message.fetch();
     var message = messageReaction.message;
-    var emojiID = messageReaction.emoji.id;
+    var guild = message.guild;
+    var emoji = messageReaction.emoji.id ? messageReaction.emoji.id : messageReaction.emoji.name;
     
-    ReactionRoles.findOne({where: {messageID: message.id}}).then(row => {
-        if(row){
-            var role = message.guild.roles.resolve(row.reactions[emojiID].roleID);
-        
-            try{
-                message.guild.members.fetch(user.id).then(member =>{
-                    member.roles.remove(role);
+    ReactionRolesOptions.findOne({where: {[Op.and]: [{baseMessageID: message.id}, {emoji: emoji}]}}).then(rrOption => {
+        if(rrOption){
+            var role = guild.roles.resolve(rrOption.roleID)
+            if(role){
+                message.guild.members.fetch(user.id).then(member => {
+                    member.roles.remove(role)
                 })
-            }catch(e){
-                console.log(e);
             }
         }
     })
