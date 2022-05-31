@@ -37,6 +37,8 @@ exports.execute = (interaction) =>{
             .setAuthor(rrMessage);
         if(rrColour){
             embed.setColor(rrColour);
+        }else{
+            embed.setColor("ORANGE");
         }
         if(rrKey){
             embed.addField("Key", "[The Key of each emote and its corresponding role]")
