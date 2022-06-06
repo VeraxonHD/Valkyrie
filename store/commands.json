@@ -1410,12 +1410,7 @@
                         "description": "The maximum size of the LFG Group",
                         "type": "INTEGER",
                         "required": true
-                    },
-                    {
-                        "name": "ping",
-                        "description": "Set a role to ping when the event is made. Leave blank for no ping",
-                        "type": "ROLE"
-                    }                   
+                    }                 
                 ]
             },
             {
@@ -1530,39 +1525,6 @@
                         "description": "The id of the LFG Embed Message",
                         "type": "STRING",
                         "required": true
-                    }
-                ]
-            },
-            {
-                "name": "reputation",
-                "description": "Add or remove a rep point for an user after their event",
-                "type": "SUB_COMMAND_GROUP",
-                "options": [
-                    {
-                        "name": "plusrep",
-                        "description": "Vote a user up after their event.",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "id",
-                                "description": "The ID of the event that has been completed",
-                                "type": "INTEGER",
-                                "required": true
-                            }
-                        ]
-                    },
-                    {
-                        "name": "minrep",
-                        "description": "Vote a user down after their event.",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "id",
-                                "description": "The ID of the event that has been completed",
-                                "type": "INTEGER",
-                                "required": true
-                            }
-                        ]
                     }
                 ]
             }
