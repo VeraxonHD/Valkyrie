@@ -349,7 +349,40 @@
                         "type": "ROLE"
                     }
                 ]
-            }, 
+            },
+            {
+                "name": "modmail",
+                "description": "Config relating to ModMail",
+                "type": "SUB_COMMAND_GROUP",
+                "options": [
+                    {
+                        "name": "enabled",
+                        "description": "Change whether or not to accept modmail tickets for this server",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "enable",
+                                "description": "Whether or not to enable modmail",
+                                "type": "BOOLEAN",
+                                "required": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "category",
+                        "description": "Set the category that new tickets will be added to",
+                        "type": "SUB_COMMAND",
+                        "options": [
+                            {
+                                "name": "category",
+                                "description": "The new category channel",
+                                "type": "CHANNEL",
+                                "required": true
+                            }
+                        ]
+                    }
+                ]
+            },
             {
                 "name": "welcomemsg",
                 "description": "A message that will be automatically sent to the user upon joining",
@@ -1687,6 +1720,63 @@
                     }
                 ]
             }       
+        ]
+    },
+    {
+        "name": "modmail",
+        "description": "Modmail-related commands",
+        "type": "SUB_COMMAND_GROUP",
+        "options": [
+            {
+                "name": "reply",
+                "description": "Reply to a ticket",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "message",
+                        "description": "Message to reply to the user with",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "anonymous",
+                        "description": "Whether or not to reply anonymously",
+                        "type": "BOOLEAN",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "close",
+                "description": "Close the ticket",
+                "type": "SUB_COMMAND"
+            },
+            {
+                "name": "rename",
+                "description": "Rename the ticket",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "name",
+                        "description": "The new ticket name",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "history",
+                "description": "View the ticket history of a user",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "member",
+                        "description": "The member to obtain the history of",
+                        "type": "USER",
+                        "required": true
+                    }
+                ]
+            }
         ]
     }
 ]
