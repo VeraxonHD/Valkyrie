@@ -1333,7 +1333,6 @@ client.on("messageCreate", async (message) =>{
                             .setDescription(`📥 ${guildMember.toString()}: ${message.content}`)
                         ticketChannel.send({files: attachments, embeds: [embed]})
                     })
-                    //TODO: CLEANUP
                 }
             }
         })
