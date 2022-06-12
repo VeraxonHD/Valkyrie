@@ -1266,10 +1266,10 @@ client.on("messageCreate", async (message) =>{
                 }
                 async function doTicketCreate(){
                     Configs.findOne({where: {guildID: selectedGuild.id}}).then(async config => {
-                        var modmailCategory = selectedGuild.channels.resolve(config.modmailCategory)
+                        var modmailCategory = await selectedGuild.channels.resolve(config.modmailCategory)
                         if(!modmailCategory){
                             selectedGuild.fetchOwner().then(owner => {
-                                owner.send("Hi! A user created a modmail ticket, and although you have modmail enabled on your Guild (\`/config modmail enable\`), you didn't have a valid parent category set up. Therefore, I had to create one manually. This new category doesn't have any permissions set, so please set some at your earliest convenience if required. You can also change the parent category at any time using the command (\`/config modmail category\`). Thanks!")
+                                //owner.send("Hi! A user created a modmail ticket, and although you have modmail enabled on your Guild (\`/config modmail enable\`), you didn't have a valid parent category set up. Therefore, I had to create one manually. This new category doesn't have any permissions set, so please set some at your earliest convenience if required. You can also change the parent category at any time using the command (\`/config modmail category\`). Thanks!")
                             })
                             await selectedGuild.channels.create("Modmail Tickets", {
                                 type: "GUILD_CATEGORY"
