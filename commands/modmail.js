@@ -154,12 +154,23 @@ exports.execute = async (interaction) => {
 
                                     ticket.update({archive: url})
 
-                                    channel.delete()
+                                    interaction.reply({content: `The ticket was closed by ${member.toString()}.`, ephemeral: false});
 
-                                    return interaction.reply({content: `The ticket was closed by ${member.toString()}.`, ephemeral: false});
+                                    channel.delete()
                                 }
                             })
-                            
+                        }).catch(err => {
+                            console.error(err)
+
+                            const logchannel = guild.channels.resolve(config.logChannelID)
+                            const embed = new Discord.MessageEmbed()
+                                .setTitle(`Modmail Ticket ${channel.name} closed`)
+                                .setDescription("Unfortunately due to a pastebin API error, the log could not be generated.")
+                                .setColor("BLUE")
+                                .setTimestamp(new Date())
+                            logchannel.send({embeds: [embed]})
+
+                            interaction.reply({content: `The ticket was closed by ${member.toString()}, however due to an error the Pastebin API could not create a new file. As a result, the ticket channel will remain open at no detriment to the user's future tickets.`, ephemeral: false});
                         })
                     })
                 })
