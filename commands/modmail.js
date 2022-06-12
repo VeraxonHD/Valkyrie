@@ -100,7 +100,7 @@ exports.execute = async (interaction) => {
     }
 
     function closeTicket(){
-        ModmailTickets.findOne({where: {channelID: channel.id}}).then(ticket => {
+        ModmailTickets.findOne({where: {channelID: channel.id}}).then(async ticket => {
             if(!ticket){
                 return interaction.reply({content: "This is not a valid ticket channel. This command can only be used in modmail ticket channels.", ephemeral: true})
             }else{
@@ -117,7 +117,7 @@ exports.execute = async (interaction) => {
                     //Archival/Transaction Generation
                     
                     var allMessages = []
-                    channel.messages.fetch().then(msgs => {
+                    channel.messages.fetch().then(async msgs => {
                         msgs.forEach(m => {
                             //console.log(m)
                             if(m.embeds.length > 0){
@@ -159,18 +159,20 @@ exports.execute = async (interaction) => {
                                     channel.delete()
                                 }
                             })
-                        }).catch(err => {
+                        }).catch(async err => {
                             console.error(err)
-
-                            const logchannel = guild.channels.resolve(config.logChannelID)
-                            const embed = new Discord.MessageEmbed()
-                                .setTitle(`Modmail Ticket ${channel.name} closed`)
-                                .setDescription("Unfortunately due to a pastebin API error, the log could not be generated.")
-                                .setColor("BLUE")
-                                .setTimestamp(new Date())
-                            logchannel.send({embeds: [embed]})
-
-                            interaction.reply({content: `The ticket was closed by ${member.toString()}, however due to an error the Pastebin API could not create a new file. As a result, the ticket channel will remain open at no detriment to the user's future tickets.`, ephemeral: false});
+                            Configs.findOne({where: {guildID: guild.id}}).then(async config => {
+                                const logchannel = guild.channels.resolve(config.logChannelID)
+                                const embed = new Discord.MessageEmbed()
+                                    .setTitle(`Modmail Ticket ${channel.name} closed`)
+                                    .setDescription("Unfortunately due to a pastebin API error, the log could not be generated.")
+                                    .setColor("BLUE")
+                                    .setTimestamp(new Date())
+                                logchannel.send({embeds: [embed]})
+    
+                                interaction.reply({content: `The ticket was closed by ${member.toString()}, however due to an error the Pastebin API could not create a new file. As a result, the ticket channel will remain open at no detriment to the user's future tickets.`, ephemeral: false});
+                            })
+                            
                         })
                     })
                 })
