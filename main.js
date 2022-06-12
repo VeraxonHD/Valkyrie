@@ -1289,11 +1289,20 @@ client.on("messageCreate", async (message) =>{
                                 open: true,
                                 archive: null
                             })
+                            if(message.attachments.size != 0){
+                                message.attachments.forEach(attachment => {
+                                    if(attachment.contentType != "image/png" && attachment.contentType != "image/jpeg" && attachment.contentType != "image/gif" && attachment.contentType != "video/mp4" && attachment.contentType != "video/quicktime" && attachment.contentType != "text/plain"){
+                                        message.reply("I was unable to send that attachment as it is an unaccepted type - Please only send .png, .jpeg, .gif, .mp4, .mov or .txt files.")
+                                    }else{
+                                        attachments.push({attachment: attachment.url, name: attachment.name, description: "A modmail attachment"})
+                                    }
+                                })
+                            }
                             selectedGuild.members.fetch(message.author.id).then(guildMember => {
                                 const embed = new Discord.MessageEmbed()
                                     .setColor("BLUE")
                                     .setDescription(`📥 ${guildMember.toString()}: ${message.content}`)
-                                ticketChannel.send({embeds: [embed]})
+                                ticketChannel.send({files: attachments, embeds: [embed]})
                             })
                         })
                     })
@@ -1309,11 +1318,21 @@ client.on("messageCreate", async (message) =>{
                     ticket.destroy()
                     //cleanup
                 }else{
+                    var attachments = []
+                    if(message.attachments.size != 0){
+                        message.attachments.forEach(attachment => {
+                            if(attachment.contentType != "image/png" && attachment.contentType != "image/jpeg" && attachment.contentType != "image/gif" && attachment.contentType != "video/mp4" && attachment.contentType != "video/quicktime" && attachment.contentType != "text/plain"){
+                                message.reply("I was unable to send that attachment as it is an unaccepted type - Please only send .png, .jpeg, .gif, .mp4, .mov or .txt files.")
+                            }else{
+                                attachments.push({attachment: attachment.url, name: attachment.name, description: "A modmail attachment"})
+                            }
+                        })
+                    }
                     ticketGuild.members.fetch(message.author.id).then(guildMember => {
                         const embed = new Discord.MessageEmbed()
                             .setColor("BLUE")
                             .setDescription(`📥 ${guildMember.toString()}: ${message.content}`)
-                        ticketChannel.send({embeds: [embed]})
+                        ticketChannel.send({files: attachments, embeds: [embed]})
                     })
                     //TODO: CLEANUP
                 }
