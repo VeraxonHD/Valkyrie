@@ -120,6 +120,28 @@ exports.execute = async (interaction) => {
                 
                 return interaction.reply({embeds: [embed]});
             })
+        }else if(subcommandGroup == "modmail"){
+            if(subcommand == "enabled"){
+                const enabled = args.getBoolean("enable")
+                Configs.update({modmailEnabled: enabled}, {where: {guildID: guild.id}}).then(() => {
+                    return interaction.reply(`Updated modmailEnabled to \`${enabled}\` successfully.`);
+                }).catch(e => {
+                    interaction.reply("Code 110 - Unknown Error with Database when trying to change modmailEnabled.");
+                    return console.error(e);
+                })
+            }else if(subcommand == "category"){
+                const category = args.getChannel("category")
+                if(category.type != "GUILD_CATEGORY"){
+                    return interaction.reply("Code 102 - Argument \`category\` must be a Category Channel.")
+                }else{
+                    Configs.update({modmailCategory: category.id}, {where: {guildID: guild.id}}).then(() => {
+                        return interaction.reply(`Updated modmailCategory to \`${category.name}\` successfully.`);
+                    }).catch(e => {
+                        interaction.reply("Code 110 - Unknown Error with Database when trying to change modmailCategory.");
+                        return console.error(e);
+                    })
+                }
+            }
         }
     }
 }
