@@ -1223,7 +1223,6 @@ client.on("messageCreate", async (message) =>{
             await Configs.findAll({where: {modmailEnabled: true}}).then(configs => {
                 configs.forEach(config => {
                     enabledGuilds.push(config.guildID)
-                    console.log(enabledGuilds)
                 })
             })
             if(!ticket){
