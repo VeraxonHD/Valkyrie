@@ -102,10 +102,14 @@ exports.execute = async (interaction) => {
                 }else{
                     enabledLogs = enabledLogs.join(", ");
                 }
+                
                 const logChannel = row.logChannelID? await guild.channels.resolve(row.logChannelID): "None set";
                 const autoRole = row.autoRoleID? await guild.roles.resolve(row.autoRoleID): "None set";
                 const muteRole = row.mutedRoleID? await guild.roles.resolve(row.mutedRoleID): "None set";
                 const welcomeMessage = row.welcomeMessage? row.welcomeMessage: "None set";
+                const modmailEnabled = row.modmailEnabled? "Yes": "No";
+                var mmcat = await guild.channels.resolve(row.modmailCategory);
+                const modmailCategory = mmcat? mmcat.name: "None set"
 
                 const embed = new Discord.MessageEmbed()
                     .setAuthor(`Config for ${guild.name}`)
@@ -115,6 +119,7 @@ exports.execute = async (interaction) => {
                     .addField("Auto-assigned Role", autoRole.toString(), true)
                     .addField("Enabled Log Types", enabledLogs, false)
                     .addField("Welcome Message", welcomeMessage, false)
+                    .addField("Modmail", `**Enabled**: ${modmailEnabled}\n**Category**: ${modmailCategory}`, true)
                     .setTimestamp(new Date())
                     .setFooter("list.config.valkyrie");
                 
