@@ -37,6 +37,11 @@ exports.execute = async (interaction) => {
 
                 infractions.forEach(infraction => {
                     var moderator = guild.members.resolve(infraction.moderatorID);
+                    if(!moderator){
+                        moderator = "Moderator no longer in server"
+                    }else{
+                        moderator = moderator.toString();
+                    }
                     switch(infraction.type){
                         case 0: 
                             infWarns.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${moderator.toString()}`);
