@@ -9,6 +9,7 @@ exports.execute = async (interaction) => {
     const main = require("../main.js");
     const Discord = require("discord.js");
     const { Op } = require("sequelize");
+    const { MultiEmbed, MultiEmbedPage } = require("../util/classes");
 
     //Database Retrieval
     const Users = main.getUsersTable();
@@ -35,59 +36,80 @@ exports.execute = async (interaction) => {
                 var infKicks = [];
                 var infBans = [];
 
+                var multiEmbed = new MultiEmbed()
+                    .setAuthor(`Multi-Page Embed for Infractions of ${targetMember.displayName}`)
+                    .setFooter("list.infraction.valkyrie")
+                    .setColor("00c597")
+            
                 infractions.forEach(infraction => {
+                    var pageFields = []
                     var moderator = guild.members.resolve(infraction.moderatorID);
                     if(!moderator){
                         moderator = "Moderator no longer in server"
                     }else{
                         moderator = moderator.toString();
                     }
+
+                    var type = ""
                     switch(infraction.type){
                         case 0: 
-                            infWarns.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${moderator.toString()}`);
+                            type = "Warn"
                             break;
                         case 1: 
-                            infMutes.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${moderator.toString()}`);
+                            type = "Mute"
                             break;
                         case 2: 
-                            infKicks.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${moderator.toString()}`);
+                            type = "Kick"
                             break;
                         case 3:
-                            infBans.push(`**ID**: ${infraction.infractionID} | **Reason**: ${infraction.reason} | **Moderator** ${moderator.toString()}`);
+                            type = "Mute"
                             break;
                         default:
                             break;
                     }
+
+                    const idField = {name: "Infraction ID", value: `${infraction.infractionID}`, inline: true}
+                    const typeField = {name: "Infraction Type", value: type, inline: true}
+                    const moderatorField = {name: "Moderator", value: moderator, inline: true}
+                    const reasonField = {name: "Reason for Infraction", value: infraction.reason, inline: false}
+
+                    pageFields.push(idField)
+                    pageFields.push(typeField)
+                    pageFields.push(moderatorField)
+                    pageFields.push(reasonField)
+                    
+                    var page = new MultiEmbedPage(pageFields)
+
+                    multiEmbed.addPage(page)                    
                 });
 
-                const embed = new Discord.MessageEmbed()
-                    .setAuthor(`List of Infractions for ${targetMember.user.tag} in ${guild.name}`)
-                    .setFooter(`list.tags.valkyrie`)
-                    .setColor("#00C597")
-                    .setTimestamp(new Date());
-                
-                if(infWarns.length > 0){
-                    embed.addField("Warns", infWarns.join("\n"));
-                }else{
-                    embed.addField("Warns", "None");
-                }
-                if(infMutes.length > 0){
-                    embed.addField("Mutes", infMutes.join("\n"));
-                }else{
-                    embed.addField("Mutes", "None");
-                }
-                if(infKicks.length > 0){
-                    embed.addField("Kicks", infKicks.join("\n"));
-                }else{
-                    embed.addField("Kicks", "None");
-                }
-                if(infBans.length > 0){
-                    embed.addField("Bans", infBans.join("\n"));
-                }else{
-                    embed.addField("Bans", "None");
-                }
-                    
-                interaction.reply({embeds: [embed]});
+                var embed = multiEmbed.render();
+
+                interaction.reply({content: `Displaying infractions for ${targetMember.user.tag}`, ephemeral: true})
+
+                channel.send(embed).then(async msg => {
+                    const filter = f => f.user.id === member.id
+                    const collector = msg.createMessageComponentCollector({ filter, time: 120000 });
+
+                    collector.on("collect", async i => {
+                        if(i.customId == "previous"){
+                            await i.deferUpdate();
+                            const previousPage = multiEmbed.previousPage();
+                            i.editReply(previousPage);
+                        }else if(i.customId == "next"){
+                            await i.deferUpdate();
+                            const nextPage = multiEmbed.nextPage();
+                            i.editReply(nextPage);
+                        }else if(i.customId == "end"){
+                            collector.stop();
+                        }
+                    })
+
+                    collector.on("end", collected => {
+                        const finalPage = multiEmbed.finalRender(`${multiEmbed.pages.length} infractions were displayed.`);
+                        msg.edit(finalPage)
+                    })
+                }).catch(console.error);
             }else{
                 interaction.reply("This user does not have any infractions in this guild.");
             }
