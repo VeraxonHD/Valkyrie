@@ -89,7 +89,7 @@ exports.execute = async (interaction) => {
                     
                 interaction.reply({embeds: [embed]});
             }else{
-                interaction.reply("This user does not have any infractions.");
+                interaction.reply("This user does not have any infractions in this guild.");
             }
         });
     }else if(subcommandGroup == "revoke"){
@@ -106,27 +106,6 @@ exports.execute = async (interaction) => {
                 return interaction.reply(`That user does not have an infraction with ID ${argInfractionID}. Try \`/infraction list\`.`);
             }else{
                 row.destroy().then(() =>{
-                    var guildUserCompositeKey = guild.id + targetMember.id;
-                    switch(row.type){
-                        case 0:
-                            GuildUsers.decrement("guildWarnCount", {where: {guildUserID: guildUserCompositeKey}});
-                            Users.decrement("globalWarnCount", {where: {userID: targetMember.id}});
-                            break;
-                        case 1:
-                            GuildUsers.decrement("guildMuteCount", {where: {guildUserID: guildUserCompositeKey}});
-                            Users.decrement("globalMuteCount", {where: {userID: targetMember.id}});
-                            break;
-                        case 2:
-                            GuildUsers.decrement("guildKickCount", {where: {guildUserID: guildUserCompositeKey}});
-                            Users.decrement("globalKickCount", {where: {userID: targetMember.id}});
-                            break;
-                        case 3:
-                            GuildUsers.decrement("guildBanCount", {where: {guildUserID: guildUserCompositeKey}});
-                            Users.decrement("globalBanCount", {where: {userID: targetMember.id}});
-                            break;
-                        default:
-                            break;
-                    }
                     return interaction.reply("Successfully deleted the specified infraction.");
                 })
             }
