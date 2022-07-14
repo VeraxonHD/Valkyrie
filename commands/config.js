@@ -103,9 +103,9 @@ exports.execute = async (interaction) => {
                     enabledLogs = enabledLogs.join(", ");
                 }
                 
-                const logChannel = row.logChannelID? await guild.channels.resolve(row.logChannelID): "None set";
-                const autoRole = row.autoRoleID? await guild.roles.resolve(row.autoRoleID): "None set";
-                const muteRole = row.mutedRoleID? await guild.roles.resolve(row.mutedRoleID): "None set";
+                const logChannel = await guild.channels.resolve(row.logChannelID)? await guild.channels.resolve(row.logChannelID): "None set or Invalid";
+                const autoRole = await guild.roles.resolve(row.autoRoleID)? await guild.roles.resolve(row.autoRoleID): "None set or Invalid";
+                const muteRole = await guild.roles.resolve(row.mutedRoleID)? await guild.roles.resolve(row.mutedRoleID): "None set or Invalid";
                 const welcomeMessage = row.welcomeMessage? row.welcomeMessage: "None set";
                 const modmailEnabled = row.modmailEnabled? "Yes": "No";
                 var mmcat = await guild.channels.resolve(row.modmailCategory);
