@@ -1749,7 +1749,15 @@
             {
                 "name": "close",
                 "description": "Close the ticket",
-                "type": "SUB_COMMAND"
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "time",
+                        "description": "The period of time to wait before closing the ticket. Cancels on new reply.",
+                        "type": "STRING",
+                        "required": false
+                    }
+                ]
             },
             {
                 "name": "rename",
@@ -1772,6 +1780,32 @@
                     {
                         "name": "member",
                         "description": "The member to obtain the history of",
+                        "type": "USER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "block",
+                "description": "Block a user from being able to send new tickets",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "member",
+                        "description": "The member to block (can be mention or ID)",
+                        "type": "USER",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "unblock",
+                "description": "Unblock a blocked user and allow them to send new tickets",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "member",
+                        "description": "The member to unblock (can be mention or ID)",
                         "type": "USER",
                         "required": true
                     }

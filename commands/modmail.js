@@ -16,9 +16,12 @@ exports.execute = async (interaction) => {
     var Publicity = pb.Publicity
     var ExpireDate = pb.ExpireDate
 
+    const { Op } = require("sequelize");
+
     //Database Retrieval
     const Configs = main.getConfigsTable();
     const ModmailTickets = main.getModmailTicketsTable();
+    const ModmailBlocked = main.getModmailBlockedTable();
     
     const subcommandGroup = args._group;
     const subcommand = args.getSubcommand();
@@ -95,6 +98,39 @@ exports.execute = async (interaction) => {
                     ticketList.push(`**Created**: ${ticket.createdAt} - **Closed**: ${ticket.open?"No":"Yes"} - **Archive link**: ${ticket.open?"Ticket Open - No Archive":ticket.archive}`)
                 })
                 return interaction.reply(ticketList.join("\n"))
+            }
+        })
+    }else if(subcommand == "block"){
+        const targetMember = args.getUser("member")
+
+        if(!targetMember){
+            return interaction.reply({content: "Code 104 - That member does not exist.", ephemeral: true});
+        }else{
+            ModmailBlocked.findOne({where: {[Op.and]: [{guildID: guild.id},{userID: targetMember.id}]}}).then(blocked => {
+                if(!blocked){
+                    ModmailBlocked.create({
+                        guildID: guild.id,
+                        userID: targetMember.id
+                    }).then(() => {
+                        return interaction.reply({content: `${targetMember.toString()} was blocked from sending modmail tickets.`, ephemeral: true});
+                    })
+                }else{
+                    return interaction.reply({content: "That member is already blocked from sending tickets.", ephemeral: true});
+                    
+                }
+            })
+            
+        }
+    }else if(subcommand == "unblock"){
+        const targetMember = args.getUser("member")
+
+        ModmailBlocked.findOne({where: {[Op.and]: [{guildID: guild.id},{userID: targetMember.id}]}}).then(blocked => {
+            if(!blocked){
+                return interaction.reply({content: "That member is not blocked.", ephemeral: true});
+            }else{
+                blocked.destroy().then(() => {
+                    return interaction.reply({content: `${targetMember.toString()} was unblocked from sending modmail tickets.`, ephemeral: true});
+                })
             }
         })
     }

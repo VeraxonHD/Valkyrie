@@ -498,7 +498,16 @@ const ModmailTickets = sequelize.define("ModmailTickets", {
         type: DataTypes.STRING
     }
 })
-
+const ModmailBlocked = sequelize.define("ModmailBlocked", {
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    userID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+})
 //DB Table Getters
 exports.getConfigsTable = () =>{
     return Configs;
@@ -557,10 +566,14 @@ exports.getPollOptionsTable = () => {
 exports.getModmailTicketsTable = () => {
     return ModmailTickets;
 }
+exports.getModmailBlockedTable = () => {
+    return ModmailBlocked;
+}
 //Client Getter
 exports.getClient = () =>{
     return client;
 }
+
 
 //Automated/Frquent Functions
 const interval = setInterval(function() {
@@ -704,6 +717,7 @@ client.on("ready", async () =>{
     await Polls.sync();
     await PollOptions.sync();
     await ModmailTickets.sync();
+    await ModmailBlocked.sync();
 
     console.log("[VALKYRIE] Tables Loaded.")
     
@@ -1259,58 +1273,63 @@ client.on("messageCreate", async (message) =>{
                     })
                 }
                 async function doTicketCreate(){
-                    var attachments = [];
-                    if(message.attachments.size != 0){
-                        message.attachments.forEach(attachment => {
-                            if(attachment.contentType != "image/png" && attachment.contentType != "image/jpeg" && attachment.contentType != "image/gif" && attachment.contentType != "video/mp4" && attachment.contentType != "video/quicktime" && attachment.contentType != "text/plain"){
-                                message.reply("I was unable to send one or more attachments as they were an unaccepted type - Please only send .png, .jpeg, .gif, .mp4, .mov or .txt files.")
+                    ModmailBlocked.findOne({where: {[Op.and]: [{guildID: selectedGuild.id},{userID: message.author.id}]}}).then(blocked => {
+                        if(blocked){
+                            return message.reply("You are currently blocked from creating new Modmail Tickets in this Guild. Please contact an Administrator if you believe that this is an error.")
+                        }else{
+                            var attachments = [];
+                            if(message.attachments.size != 0){
+                                message.attachments.forEach(attachment => {
+                                    if(attachment.contentType != "image/png" && attachment.contentType != "image/jpeg" && attachment.contentType != "image/gif" && attachment.contentType != "video/mp4" && attachment.contentType != "video/quicktime" && attachment.contentType != "text/plain"){
+                                        message.reply("I was unable to send one or more attachments as they were an unaccepted type - Please only send .png, .jpeg, .gif, .mp4, .mov or .txt files.")
+                                    }else{
+                                        attachments.push({attachment: attachment.url, name: attachment.name, description: "A modmail attachment"})
+                                    }
+                                })
+                            }
+                            if(message.content.length == 0 && attachments.length == 0){
+                                return;
                             }else{
-                                attachments.push({attachment: attachment.url, name: attachment.name, description: "A modmail attachment"})
-                            }
-                        })
-                    }
-                    if(message.content.length == 0 && attachments.length == 0){
-                        return;
-                    }else{
-                        message.reply(`Thank you for submitting a ticket. You are being connected to the staff team at **${selectedGuild.name}**. Please monitor here for any responses to your ticket.`)
-                        const embed = new Discord.MessageEmbed()
-                            .setColor("BLUE")
-                            .setDescription(`📤 ${message.author.toString()}: ${message.content}`)
+                                message.reply(`Thank you for submitting a ticket. You are being connected to the staff team at **${selectedGuild.name}**. Please monitor here for any responses to your ticket.`)
+                                const embed = new Discord.MessageEmbed()
+                                    .setColor("BLUE")
+                                    .setDescription(`📤 ${message.author.toString()}: ${message.content}`)
 
-                        Configs.findOne({where: {guildID: selectedGuild.id}}).then(async config => {
-                            var modmailCategory = await selectedGuild.channels.resolve(config.modmailCategory)
-                            if(!modmailCategory){
-                                selectedGuild.fetchOwner().then(owner => {
-                                    owner.send("Hi! A user created a modmail ticket, and although you have modmail enabled on your Guild (\`/config modmail enable\`), you didn't have a valid parent category set up. Therefore, I had to create one manually. This new category doesn't have any permissions set, so please set some at your earliest convenience if required. You can also change the parent category at any time using the command (\`/config modmail category\`). Thanks!")
-                                })
-                                await selectedGuild.channels.create("Modmail Tickets", {
-                                    type: "GUILD_CATEGORY"
-                                }).then(async ncc => {
-                                    modmailCategory = ncc
-                                    await config.update({modmailCategory: ncc.id})
+                                Configs.findOne({where: {guildID: selectedGuild.id}}).then(async config => {
+                                    var modmailCategory = await selectedGuild.channels.resolve(config.modmailCategory)
+                                    if(!modmailCategory){
+                                        selectedGuild.fetchOwner().then(owner => {
+                                            owner.send("Hi! A user created a modmail ticket, and although you have modmail enabled on your Guild (\`/config modmail enable\`), you didn't have a valid parent category set up. Therefore, I had to create one manually. This new category doesn't have any permissions set, so please set some at your earliest convenience if required. You can also change the parent category at any time using the command (\`/config modmail category\`). Thanks!")
+                                        })
+                                        await selectedGuild.channels.create("Modmail Tickets", {
+                                            type: "GUILD_CATEGORY"
+                                        }).then(async ncc => {
+                                            modmailCategory = ncc
+                                            await config.update({modmailCategory: ncc.id})
+                                        })
+                                    }
+                                    selectedGuild.channels.create(`${message.author.username}-${message.author.discriminator}`, {
+                                        parent: modmailCategory
+                                    }).then(ticketChannel => {
+                                        ModmailTickets.create({
+                                            userID: message.author.id,
+                                            guildID: selectedGuild.id,
+                                            channelID: ticketChannel.id,
+                                            open: true,
+                                            archive: null
+                                        })
+            
+                                        selectedGuild.members.fetch(message.author.id).then(guildMember => {
+                                            const embed = new Discord.MessageEmbed()
+                                                .setColor("BLUE")
+                                                .setDescription(`📥 ${guildMember.toString()}: ${message.content}`)
+                                            ticketChannel.send({files: attachments, embeds: [embed]})
+                                        })
+                                    })
                                 })
                             }
-                            selectedGuild.channels.create(`${message.author.username}-${message.author.discriminator}`, {
-                                parent: modmailCategory
-                            }).then(ticketChannel => {
-                                ModmailTickets.create({
-                                    userID: message.author.id,
-                                    guildID: selectedGuild.id,
-                                    channelID: ticketChannel.id,
-                                    open: true,
-                                    archive: null
-                                })
-    
-                                selectedGuild.members.fetch(message.author.id).then(guildMember => {
-                                    const embed = new Discord.MessageEmbed()
-                                        .setColor("BLUE")
-                                        .setDescription(`📥 ${guildMember.toString()}: ${message.content}`)
-                                    ticketChannel.send({files: attachments, embeds: [embed]})
-                                })
-                            })
-                        })
-                    }
-                    
+                        }
+                    })
                 }
             }else{
                 var ticketGuild = client.guilds.resolve(ticket.guildID)
