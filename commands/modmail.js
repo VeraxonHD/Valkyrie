@@ -10,11 +10,9 @@ exports.execute = async (interaction) => {
     const logs = require("../util/logFunctions.js");
     const Discord = require("discord.js");
     const config = require("../store/config.json");
-    const pb = require("pastebin-api")
+    const df = require("dateformat")
 
-    var PasteClient = pb.PasteClient
-    var Publicity = pb.Publicity
-    var ExpireDate = pb.ExpireDate
+    var fs = require("fs")
 
     const { Op } = require("sequelize");
 
@@ -94,10 +92,17 @@ exports.execute = async (interaction) => {
                 return interaction.reply({content: "The member provided has no ticket history.", ephemeral: false});
             }else{
                 var ticketList = []
+                var files = []
                 tickets.forEach(ticket => {
-                    ticketList.push(`**Created**: ${ticket.createdAt} - **Closed**: ${ticket.open?"No":"Yes"} - **Archive link**: ${ticket.open?"Ticket Open - No Archive":ticket.archive}`)
+                    if(ticket.archive.indexOf("pastebin") == -1 && !ticket.open){
+                        ticketList.push(`**Created**: ${df(ticket.createdAt, "dd/mm/yyyy HH:MM:ss Z")} - **Closed**: ${ticket.open?"No":"Yes"} - **File attached**`)
+                        files.push({attachment: ticket.archive})
+                    }else{
+                        ticketList.push(`**Created**: ${df(ticket.createdAt, "dd/mm/yyyy HH:MM:ss Z")} - **Closed**: ${ticket.open?"No":"Yes"} - **Archive**: ${ticket.open?"Ticket Open - No Archive":ticket.archive}`)
+                    }
+                    
                 })
-                return interaction.reply(ticketList.join("\n"))
+                return interaction.reply({content: ticketList.join("\n"), files: files})
             }
         })
     }else if(subcommand == "block"){
@@ -140,76 +145,83 @@ exports.execute = async (interaction) => {
             if(!ticket){
                 return interaction.reply({content: "This is not a valid ticket channel. This command can only be used in modmail ticket channels.", ephemeral: true})
             }else{
+                var embed = new Discord.MessageEmbed()
+                    .setColor("RED")
+                    .setDescription(`The ticket was closed by the Staff team of **${guild.name}**. If you require further assistance, please open a new Ticket.`)
                 guild.members.fetch(ticket.userID).then(replyMember => {
-                    var embed = new Discord.MessageEmbed()
-                            .setColor("RED")
-                            .setDescription(`The ticket was closed by the Staff team of **${guild.name}**. If you require further assistance, please open a new Ticket.`)
                     if(replyMember){
                         replyMember.send({embeds: [embed]})
                     }
-                    channel.send({embeds: [embed]})
-                    ticket.update({open: false})
+                });
 
-                    //Archival/Transaction Generation
-                    
-                    var allMessages = []
-                    channel.messages.fetch().then(async msgs => {
-                        msgs.forEach(m => {
-                            //console.log(m)
-                            if(m.embeds.length > 0){
-                                var attachments = []
-                                if(m.attachments.size > 0){
-                                    m.attachments.forEach(attachment => {
-                                        attachments.push(attachment.url)
-                                    })
-                                }
-                                allMessages.push({timestamp: m.createdAt, content: m.embeds[0].description, attachments: attachments})
+                channel.send({embeds: [embed]})
+                ticket.update({open: false})
+
+                //Archival/Transaction Generation
+                
+                var allMessages = []
+                channel.messages.fetch().then(async msgs => {
+                    msgs.forEach(m => {
+                        //console.log(m)
+                        if(m.embeds.length > 0){
+                            var attachments = []
+                            if(m.attachments.size > 0){
+                                m.attachments.forEach(attachment => {
+                                    attachments.push(attachment.url)
+                                })
                             }
-                        })
-                        var messagesFormatted = []
-                        allMessages.forEach(msg => {
+                            allMessages.push({timestamp: m.createdAt, content: m.embeds[0].description, attachments: attachments})
+                        }
+                    })
+                    var messagesFormatted = []
+                    allMessages.forEach(msg => {
+                        console.log(msg.attachments)
+                        if(msg.attachments.length > 0){
                             messagesFormatted.push(`[${msg.timestamp}] - ${msg.content} [Attachments: ${msg.attachments.toString()}]`)
-                        })
-                        messagesFormatted.reverse()
-                        pbClient = new PasteClient(config.pastebinToken)
-                        pbClient.createPaste({
-                            code: messagesFormatted.join("\n"),
-                            expireDate: ExpireDate.Never,
-                            name: channel.name,
-                            publicity: Publicity.Unlisted
-                        }).then(url => {
-                            Configs.findOne({where: {guildID: guild.id}}).then(config => {
-                                if(config){
-                                    const logchannel = guild.channels.resolve(config.logChannelID)
-                                    const embed = new Discord.MessageEmbed()
-                                        .setTitle(`Modmail Ticket ${channel.name} closed`)
-                                        .setURL(url)
-                                        .setColor("BLUE")
-                                        .setTimestamp(new Date())
-                                    logchannel.send({embeds: [embed]})
+                        }else{
+                            messagesFormatted.push(`[${msg.timestamp}] - ${msg.content}`)
+                        }
+                        
+                    })
+                    messagesFormatted.reverse()
 
-                                    ticket.update({archive: url})
-
-                                    interaction.reply({content: `The ticket was closed by ${member.toString()}.`, ephemeral: false});
-
-                                    channel.delete()
-                                }
-                            })
-                        }).catch(async err => {
-                            console.error(err)
-                            Configs.findOne({where: {guildID: guild.id}}).then(async config => {
-                                const logchannel = guild.channels.resolve(config.logChannelID)
+                    var filename = `${new Date().getTime()} ${ticket.userID}.txt`
+                    var path = `./store/modmail/${filename}`
+                    fs.writeFile(path, `banana`, err =>{
+                        if(err) console.error(err)
+                    })
+                    var file = fs.createWriteStream(path)
+                    file.on("error", (err) => {
+                        console.error(err)
+                        return interaction.reply({content: "There was an error generating the ticket archive data. Apologies for the inconvenience", ephemeral: false});                            
+                    })
+                    messagesFormatted.forEach(msg =>{
+                        file.write(msg + "\n")
+                    })
+                    file.end();
+                    Configs.findOne({where: {guildID: guild.id}}).then(config => {
+                        if(config){
+                            const logchannel = guild.channels.resolve(config.logChannelID)
+                            if(logchannel){
                                 const embed = new Discord.MessageEmbed()
-                                    .setTitle(`Modmail Ticket ${channel.name} closed`)
-                                    .setDescription("Unfortunately due to a pastebin API error, the log could not be generated.")
-                                    .setColor("BLUE")
-                                    .setTimestamp(new Date())
-                                logchannel.send({embeds: [embed]})
-    
-                                interaction.reply({content: `The ticket was closed by ${member.toString()}, however due to an error the Pastebin API could not create a new file. As a result, the ticket channel will remain open at no detriment to the user's future tickets.`, ephemeral: false});
-                            })
-                            
-                        })
+                                .setTitle(`Modmail Ticket ${channel.name} closed`)
+                                .setColor("BLUE")
+                                .setTimestamp(new Date())
+                                logchannel.send({embeds: [embed],
+                                    files: [{
+                                        attachment: path,
+                                        name: filename,
+                                        description: "A modmail log file"
+                                    }]
+                                })
+
+                                ticket.update({archive: path})
+
+                                interaction.reply({content: `The ticket was closed by ${member.toString()}.`, ephemeral: false});
+
+                                channel.delete()
+                            }
+                        }
                     })
                 })
             }
