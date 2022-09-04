@@ -449,12 +449,6 @@ const Polls = sequelize.define("Polls", {
     subject: {
         type: DataTypes.STRING,
         allowNull: false
-    },
-    anonymizeResults: {
-        type: DataTypes.BOOLEAN
-    },
-    privateResults: {
-        type: DataTypes.BOOLEAN
     }
 })
 const PollOptions = sequelize.define("PollOptions", {
@@ -462,11 +456,21 @@ const PollOptions = sequelize.define("PollOptions", {
         type: DataTypes.STRING,
         allowNull: false
     },
-    optionNumber: {
-        type: DataTypes.INTEGER,
+    optionText: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+})
+const PollResponses = sequelize.define("PollResponses", {
+    pollID: {
+        type: DataTypes.STRING,
         allowNull: false
     },
-    optionText: {
+    memberID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    option: {
         type: DataTypes.STRING,
         allowNull: false
     }
@@ -562,6 +566,9 @@ exports.getPollsTable = () => {
 }
 exports.getPollOptionsTable = () => {
     return PollOptions;
+}
+exports.getPollResponses = () => {
+    return PollResponses;
 }
 exports.getModmailTicketsTable = () => {
     return ModmailTickets;
@@ -716,6 +723,7 @@ client.on("ready", async () =>{
     await Timeouts.sync();
     await Polls.sync();
     await PollOptions.sync();
+    await PollResponses.sync();
     await ModmailTickets.sync();
     await ModmailBlocked.sync();
 
@@ -912,6 +920,26 @@ client.on("interactionCreate", (interaction) =>{
                         return interaction.reply({content: "You have already signed up for this event!", ephemeral: true});
                     }
                 })
+            });
+        }else if(interaction.customId.startsWith("poll")){
+            const pollID = interaction.customId.split("-")[1]
+            const optionText = interaction.customId.split("-")[2]
+
+            Polls.findOne({where:{pollID: pollID}}).then(poll => {
+                if(poll){
+                    PollResponses.findOne({where: {[Op.and]: [{pollID: poll.pollID},{memberID: interaction.member.id}]}}).then(response => {
+                        if(response){
+                            response.update({option: optionText})
+                        }else{
+                            PollResponses.create({
+                                pollID: poll.pollID,
+                                memberID: interaction.member.id,
+                                option: optionText
+                            })
+                        }
+                        interaction.reply({content: `Registered your response for ${optionText} successfully.`, ephemeral: true})
+                    })
+                }
             });
         }
     }

@@ -1592,7 +1592,7 @@
                 "options": [
                     {
                         "name": "subject",
-                        "description": "The subject of the poll",
+                        "description": "The subject (text) of the poll",
                         "type": "STRING",
                         "required": true
                     }
@@ -1618,108 +1618,30 @@
                 ]
             },
             {
-                "name": "remove-option",
-                "description": "Remove an option from a poll using its ID",
+                "name": "close",
+                "description": "Closes the poll in various ways",
                 "type": "SUB_COMMAND",
                 "options": [
                     {
                         "name": "pollid",
-                        "description": "The poll ID to remove from",
+                        "description": "ID of the poll to close",
                         "type": "STRING",
                         "required": true
                     },
                     {
-                        "name": "optionid",
-                        "description": "The ID of the option",
-                        "type": "STRING",
-                        "required": true
-                    }
-                ]
-            },
-            {
-                "name": "get-options",
-                "description": "List all options and their IDs",
-                "type": "SUB_COMMAND",
-                "options": [
-                    {
-                        "name": "pollid",
-                        "description": "The ID of the poll",
-                        "type": "STRING",
-                        "required": true
-                    }
-                ]
-            },
-            {
-                "name": "settings",
-                "description": "List all options and their IDs",
-                "type": "SUB_COMMAND_GROUP",
-                "options": [
-                    {
                         "name": "anonymous-results",
-                        "description": "Whether or not results should be anonymous",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "pollid",
-                                "description": "The ID of the poll",
-                                "type": "STRING",
-                                "required": true
-                            },
-                            {
-                                "name": "value",
-                                "description": "If true, results will be anonymous after the poll is closed",
-                                "type": "BOOLEAN",
-                                "required": true
-                            }
-                        ]
+                        "description": "Whether to keep results anonymous",
+                        "type": "BOOLEAN",
+                        "required": true
                     },
                     {
                         "name": "private-results",
-                        "description": "Whether or not results should be private (sent via DM)",
-                        "type": "SUB_COMMAND",
-                        "options": [
-                            {
-                                "name": "pollid",
-                                "description": "The ID of the poll",
-                                "type": "STRING",
-                                "required": true
-                            },
-                            {
-                                "name": "value",
-                                "description": "If true, results will be sent to the creator after the poll is closed",
-                                "type": "BOOLEAN",
-                                "required": true
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "close",
-                "description": "Close a poll and collate the results",
-                "type": "SUB_COMMAND",
-                "options": [
-                    {
-                        "name": "pollid",
-                        "description": "The ID of the poll",
-                        "type": "STRING",
+                        "description": "Whether to keep results private to the log channel",
+                        "type": "BOOLEAN",
                         "required": true
                     }
                 ]
-            },
-            {
-                "name": "delete",
-                "description": "Delete a poll without collating results",
-                "type": "SUB_COMMAND",
-                "options": [
-                    {
-                        "name": "pollid",
-                        "description": "The ID of the poll",
-                        "type": "STRING",
-                        "required": true
-                    }
-                ]
-            }       
+            }
         ]
     },
     {
