@@ -617,7 +617,7 @@
                 "options": [
                     {
                         "name": "messageid",
-                        "description": "The ID of the Base Message you want to delete",
+                        "description": "The ID of the Base Message you want to edit",
                         "type": "STRING",
                         "required": true
                     },
@@ -1729,6 +1729,213 @@
                         "name": "member",
                         "description": "The member to unblock (can be mention or ID)",
                         "type": "USER",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "selfrole",
+        "description": "Create, modify and delete self-serve roles",
+        "options": [
+            {
+                "name": "init",
+                "description": "Initialize a Self Role Base Message",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "channel",
+                        "description": "The channel to initialize the Base Message",
+                        "type": "CHANNEL",
+                        "required": true
+                    },
+                    {
+                        "name": "message",
+                        "description": "The text you want the Base Message to display",
+                        "type": "STRING"
+                    },
+                    {
+                        "name": "colour",
+                        "description": "The colour of the embed message. Default: ORANGE",
+                        "type": "STRING",
+                        "choices": [
+                            {
+                                "name": "white",
+                                "value": "WHITE"
+                            },
+                            {
+                                "name": "aqua",
+                                "value": "AQUA"
+                            },
+                            {
+                                "name": "green",
+                                "value": "GREEN"
+                            },
+                            {
+                                "name": "blue",
+                                "value": "BLUE"
+                            },
+                            {
+                                "name": "yellow",
+                                "value": "YELLOW"
+                            },
+                            {
+                                "name": "purple",
+                                "value": "PURPLE"
+                            },
+                            {
+                                "name": "pink",
+                                "value": "LUMINOUS_VIVID_PINK"
+                            },
+                            {
+                                "name": "gold",
+                                "value": "GOLD"
+                            },
+                            {
+                                "name": "orange",
+                                "value": "ORANGE"
+                            },
+                            {
+                                "name": "red",
+                                "value": "RED"
+                            },
+                            {
+                                "name": "grey",
+                                "value": "GREY"
+                            },
+                            {
+                                "name": "navy",
+                                "value": "NAVY"
+                            },
+                            {
+                                "name": "dark_aqua",
+                                "value": "DARK_AQUA"
+                            },
+                            {
+                                "name": "dark_green",
+                                "value": "DARK_GREEN"
+                            },
+                            {
+                                "name": "dark_blue",
+                                "value": "DARK_BLUE"
+                            },
+                            {
+                                "name": "dark_purple",
+                                "value": "DARK_PURPLE"
+                            },
+                            {
+                                "name": "dark_gold",
+                                "value": "DARK_GOLD"
+                            },
+                            {
+                                "name": "dark_orange",
+                                "value": "DARK_ORANGE"
+                            },
+                            {
+                                "name": "dark_red",
+                                "value": "DARK_RED"
+                            },
+                            {
+                                "name": "dark_grey",
+                                "value": "DARK_GREY"
+                            },
+                            {
+                                "name": "dark_navy",
+                                "value": "DARK_NAVY"
+                            },
+                            {
+                                "name": "blurple",
+                                "value": "BLURPLE"
+                            },
+                            {
+                                "name": "dark_but_not_black",
+                                "value": "DARK_BUT_NOT_BLACK"
+                            },
+                            {
+                                "name": "not_quite_black",
+                                "value": "NOT_QUITE_BLACK"
+                            },
+                            {
+                                "name": "random",
+                                "value": "RANDOM"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "add",
+                "description": "Add an option to an initialized Base Message.",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageid",
+                        "description": "The ID of the pre-initialized Base Message to add to",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "displaytext",
+                        "description": "The display text to add",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "role",
+                        "description": "The role you want to associate with this option",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "delete",
+                "description": "Delete a Specific Self Role from a message",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageid",
+                        "description": "The ID of the Base Message you want to delete",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "role",
+                        "description": "The self role you want to delete",
+                        "type": "ROLE",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "delete-all",
+                "description": "Delete a Base Message",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageid",
+                        "description": "The ID of the Base Message you want to delete",
+                        "type": "STRING",
+                        "required": true
+                    }
+                ]
+            },
+            {
+                "name": "edit",
+                "description": "Edit the message of a Self Role embed",
+                "type": "SUB_COMMAND",
+                "options": [
+                    {
+                        "name": "messageid",
+                        "description": "The ID of the Base Message you want to edit",
+                        "type": "STRING",
+                        "required": true
+                    },
+                    {
+                        "name": "newtext",
+                        "description": "The new text to set",
+                        "type": "STRING",
                         "required": true
                     }
                 ]

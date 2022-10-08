@@ -512,6 +512,43 @@ const ModmailBlocked = sequelize.define("ModmailBlocked", {
         allowNull: false
     }
 })
+const SelfRoles = sequelize.define("SelfRoles", {
+    selfRoleID: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        unique: true,
+        allowNull: false,
+        autoIncrement: true
+    },
+    guildID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    channelID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    messageID: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    }
+})
+const SelfRoleOptions = sequelize.define("SelfRoleOptions", {
+    baseMessageID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    optionID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    roleID: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+    
+})
 //DB Table Getters
 exports.getConfigsTable = () =>{
     return Configs;
@@ -575,6 +612,12 @@ exports.getModmailTicketsTable = () => {
 }
 exports.getModmailBlockedTable = () => {
     return ModmailBlocked;
+}
+exports.getSelfRolesTable = () => {
+    return SelfRoles;
+}
+exports.getSelfRoleOptionsTable = () => {
+    return SelfRoleOptions;
 }
 //Client Getter
 exports.getClient = () =>{
@@ -726,6 +769,8 @@ client.on("ready", async () =>{
     await PollResponses.sync();
     await ModmailTickets.sync();
     await ModmailBlocked.sync();
+    await SelfRoles.sync();
+    await SelfRoleOptions.sync();
 
     console.log("[VALKYRIE] Tables Loaded.")
     
@@ -941,6 +986,39 @@ client.on("interactionCreate", (interaction) =>{
                     })
                 }
             });
+        }
+    }else if(interaction.isSelectMenu()){
+        if(interaction.customId.startsWith("selfrole")){
+            var options = interaction.values;
+            var member = interaction.member;
+            var message = interaction.message;
+            if(options.length == 0){
+                SelfRoleOptions.findAll({where: {baseMessageID: message.id}}).then(rows => {
+                    if(rows.length > 0){
+                        rows.forEach(row => {
+                            if(member.roles.resolve(row.roleID)){
+                                member.roles.remove(row.roleID)
+                            }
+                        })
+                    }
+                })
+            }
+            options.forEach(option => {
+                SelfRoleOptions.findAll({where: {baseMessageID: message.id}}).then(rows => {
+                    if(rows.length > 0){
+                        rows.forEach(row => {
+                            if(options.find(r => r === row.optionID)){
+                                member.roles.add(row.roleID)
+                            }else{
+                                if(member.roles.resolve(row.roleID)){
+                                    member.roles.remove(row.roleID)
+                                }
+                            }
+                        })
+                    }
+                })
+            })
+            return interaction.reply({content: "Updated your roles successfully.", ephemeral: true});
         }
     }
 
@@ -1883,5 +1961,7 @@ client.login(sysConfig.token);
 
 //Handle unhandled rejections
 process.on("unhandledRejection", err => {
+    console.log(`========Unhandled Rejection Occurred at ${new Date()}========`)
     console.error(err);
+    console.log(`=============================================================`)
 });
