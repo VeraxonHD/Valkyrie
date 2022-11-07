@@ -12,7 +12,8 @@
     "sqlite3": "^5.0.0"
   },
   "scripts": {
-    "launch": "node main.js"
+    "start": "rm err.log out.log && forever -e err.log -o out.log start main.js",
+    "test": "nodemon main.js"
   },
   "repository": {
     "type": "git",
