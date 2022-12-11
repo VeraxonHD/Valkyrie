@@ -83,14 +83,20 @@ exports.execute = async (interaction) => {
                                     .setStyle("PRIMARY")
                             )
         
-                            pollMessage.edit({embeds: [pollMessage.embeds[0]], components: [components]})
-                            
-                            PollOptions.create({
-                                pollID: poll.pollID,
-                                optionText: option
+                            pollMessage.edit({embeds: [pollMessage.embeds[0]], components: [components]}).then(() => {
+                                PollOptions.create({
+                                    pollID: poll.pollID,
+                                    optionText: option
+                                })
+            
+                                return interaction.reply({content: `Added option ${option} to ${poll.pollID}`, ephemeral: true});
+                            }).catch(err => {
+                                if(components.components.length > 5){
+                                    return interaction.reply({content: "Failed to add option - the maximum supported number of options is 5.", ephemeral: true});
+                                }else{
+                                    return interaction.reply({content: "Code 110 - Failed to add option.", ephemeral: true});
+                                }
                             })
-        
-                            return interaction.reply({content: `Added option ${option} to ${poll.pollID}`, ephemeral: true});
                         })
                     }
                 })
@@ -146,15 +152,26 @@ exports.execute = async (interaction) => {
                             logChannel.send({embeds: [embed]})
                         }
                     })
+                    var privateResultsEmbed = new Discord.MessageEmbed()
+                        .addField(`Poll "${poll.subject}" was closed`, "The results were sent to a private channel by a Moderator's request.")
+                        .setColor("GREEN")
+                        .setTimestamp(new Date())
+                        var pollChannel = guild.channels.resolve(poll.channelID)
+                        if(pollChannel){
+                            pollChannel.send({embeds: [privateResultsEmbed]})
+                        }
                 }else{
                     var pollChannel = guild.channels.resolve(poll.channelID)
                     if(pollChannel){
                         pollChannel.send({embeds: [embed]})
                     }
                 }
+                //TODO: Cleanup/mark poll as closed to disallow further edits or votes.
                 return interaction.reply({content: `Successfully closed poll \`${poll.pollID}\`.`, ephemeral: true});
                 
             }
         })
     }
+
+    //TODO: Add subcommand to remove option
 }

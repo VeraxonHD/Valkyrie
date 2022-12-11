@@ -31,6 +31,9 @@ exports.execute = (interaction) => {
 
     guild.members.fetch(targetID).then(async targetMember =>{
         Users.findOne({where: {userID: targetMember.id}}).then(async userData => {
+            if(!userData){
+                return interaction.reply({content: `Sorry, but the user data for that user could not be found, implying they have never sent a message in a server where Valkyrie is also present.`, ephemeral: true});
+            }
             var guildUserCompositeKey = guild.id + targetMember.id;
             var lastSeenChannelName = client.guilds.cache.get(userData.lastSeenGuildID).channels.resolve(userData.lastSeenChannelID);
             var lastSeenGuildName = client.guilds.cache.get(userData.lastSeenGuildID).name;
