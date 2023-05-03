@@ -1193,7 +1193,7 @@ client.on("messageCreate", async (message) =>{
                     if(!row){
                         if(blacklist.length != 0){
                             blacklist.forEach(async blacklistItem => {
-                                if(message.content.indexOf(blacklistItem.phrase) != -1){
+                                if(message.content.toLowerCase().indexOf(blacklistItem.phrase.toLowerCase()) != -1){
                                     message.reply("Your message contained a phrase on this Guild's blacklist. The message has been deleted.").then(async () => {
                                         var logchannel = await common.getLogChannel(message.guild.id);
                                         
@@ -1260,7 +1260,7 @@ client.on("messageCreate", async (message) =>{
                                                 
                                                 break;
                                             case 3:
-                                                message.member.ban({days: 7, reason: "Use of a blacklisted word/phrase - automod kick action"}).then(async () => {
+                                                message.member.ban({days: 7, reason: "Use of a blacklisted word/phrase - automod ban action"}).then(async () => {
                                                     Infractions.create({
                                                         guildID: message.guild.id,
                                                         userID: message.author.id,
